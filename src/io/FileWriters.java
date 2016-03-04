@@ -3,6 +3,11 @@ package io;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+ * 
+ * @author Magnus Fransson
+ * @version 1.0
+ */
 public class FileWriters {
 	
 	FileWriter w;
