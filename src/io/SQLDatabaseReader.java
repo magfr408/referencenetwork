@@ -230,7 +230,6 @@ public class SQLDatabaseReader {
 
 		this.psNetwork.setInt(1, today);
 		this.psNetwork.setString(2, region);
-		this.psNetwork.setInt(3, today);
 
 		return this.psNetwork.executeQuery();
 	}
