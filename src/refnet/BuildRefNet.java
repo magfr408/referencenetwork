@@ -20,10 +20,10 @@ public class BuildRefNet {
 	private RefNetwork refNet;
 	private SQLDatabaseReader dbr;
 
-	public BuildRefNet(String host, String instance, String name, String user, String password, int today,
+	public BuildRefNet(String host, int port, String name, String user, String password, int today,
 			String region, String loggerPath, String logFileName) {
 
-		this.dbr = new SQLDatabaseReader(host, instance, name, user, password, 1);
+		this.dbr = new SQLDatabaseReader(host, port, name, user, password, 1);
 
 		this.refNet = createRefNetwork(this.dbr, today, region, loggerPath,
 		 logFileName);
@@ -219,7 +219,7 @@ public class BuildRefNet {
 		String region = "AB";
 		int today = 20151119;
 
-		BuildRefNet builder = new BuildRefNet("host", "dbstr", "dbstr", "username", "password", today, region,
+		BuildRefNet builder = new BuildRefNet("host", 5432, "dbstr", "username", "password", today, region,
 				"C:\\Users\\SEMGFN\\Desktop\\", "log.txt");
 
 		for (int i = 0; i < attributes.length; i++) {
