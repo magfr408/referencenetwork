@@ -21,11 +21,11 @@ public class BuildRefNet {
 	private SQLDatabaseReader dbr;
 
 	public BuildRefNet(String host, int port, String name, String user, String password, int today,
-			String region, String loggerPath, String logFileName) {
+			String[] regions, String loggerPath, String logFileName) {
 
 		this.dbr = new SQLDatabaseReader(host, port, name, user, password, 1);
 
-		this.refNet = createRefNetwork(this.dbr, today, region, loggerPath,
+		this.refNet = createRefNetwork(this.dbr, today, regions, loggerPath,
 		 logFileName);
 		//this.refNet = createRefNetworkSodraLanken(this.dbr, loggerPath, logFileName);
 		System.out.println("Info: Done loading and sanity-checking data from DB.");
@@ -41,14 +41,14 @@ public class BuildRefNet {
 	 * @param region
 	 * @return
 	 */
-	public static RefNetwork createRefNetwork(SQLDatabaseReader dbr, int today, String region, String loggerPath,
+	public static RefNetwork createRefNetwork(SQLDatabaseReader dbr, int today, String[] regions, String loggerPath,
 			String logFileName) {
 
 		ResultSet result = null;
 
 		try {
 			System.out.println("Info: Loading data from DB.");
-			result = dbr.getNetworkByRegion(today, region);
+			result = dbr.getNetworkByRegion(today, regions);
 			RefNetwork rn = new RefNetwork(result, loggerPath, logFileName);
 			return rn;
 		} catch (SQLException se) {
@@ -145,7 +145,7 @@ public class BuildRefNet {
 	 *            "FUNCTIONAL_ROAD_CLASS", "LANES",
 	 *            "FORBIDDEN_DRIVER_DIRECTION", "SPEED".
 	 */
-	public void addAttribute(int today, String region, String attributeType) {
+	public void addAttribute(int today, String[] region, String attributeType) {
 
 		System.out.println("Loading one attribute " + attributeType + " from DB. It will be added to the network.");
 		ResultSet res = null;
@@ -164,7 +164,7 @@ public class BuildRefNet {
 			// TODO: other attributes?
 
 			this.refNet.addAttribute(res);
-
+			
 		} catch (SQLException e) {
 			e.printStackTrace();
 			this.closeConnections();
@@ -216,27 +216,27 @@ public class BuildRefNet {
 
 		String[] attributes = new String[] { "FUNCTIONAL_ROAD_CLASS", "LANES", "FORBIDDEN_DRIVER_DIRECTION", "SPEED" };
 
-		String region = "AB";
-		int today = 20151119;
+		String[] regions = {"E"};
+		int today = 20160603;
 
-		BuildRefNet builder = new BuildRefNet("host", 5432, "dbstr", "username", "password", today, region,
-				"C:\\Users\\SEMGFN\\Desktop\\", "log.txt");
+		BuildRefNet builder = new BuildRefNet("localhost", 5455, "mms", "XXXX", "XXXX", today, regions,
+				"C:\\Users\\rasri17\\Desktop\\", "log.txt");
 
 		for (int i = 0; i < attributes.length; i++) {
-			builder.addAttribute(today, region, attributes[i]);
+			builder.addAttribute(today, regions, attributes[i]);
 		}
 
-		builder.writeRefNetworkToFile("C:\\Users\\SEMGFN\\Desktop\\refnet\\",
-				"4refnet_sodralanken_dirty_" + today + ".csv", true);
-		builder.writeRefNodesToFile("C:\\Users\\SEMGFN\\Desktop\\refnet\\",
-				"4refnodes_sodralanken_dirty_" + today + ".csv");
+		builder.writeRefNetworkToFile("C:\\Users\\rasri17\\Desktop\\refnet\\",
+				"refnet_E-lan_dirty_" + today + ".csv", true);
+		builder.writeRefNodesToFile("C:\\Users\\rasri17\\Desktop\\refnet\\",
+				"refnodes_E-lan_dirty_" + today + ".csv");
 
 		builder.clean();
 
-		builder.writeRefNetworkToFile("C:\\Users\\SEMGFN\\Desktop\\refnet\\",
-				"4refnet_sodralanken_clean_" + today + ".csv", true);
-		builder.writeRefNodesToFile("C:\\Users\\SEMGFN\\Desktop\\refnet\\",
-				"4refnodes_sodralanken_clean_" + today + ".csv");
+		builder.writeRefNetworkToFile("C:\\Users\\rasri17\\Desktop\\refnet\\",
+				"refnet_E-lan_clean_" + today + ".csv", true);
+		builder.writeRefNodesToFile("C:\\Users\\rasri17\\Desktop\\refnet\\",
+				"refnodes_E-lan_clean_" + today + ".csv");
 
 		builder.close();
 	}
