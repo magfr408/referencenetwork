@@ -1,5 +1,6 @@
 package io;
 
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -46,7 +47,9 @@ public class SQLDatabaseReader {
 		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
 		  	+ "FROM nvdb.ref_link_part "
 		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
-		  	+ "AND county_id = ?  "
+		  	+ "AND county_id IN( "
+	          	+ "(SELECT value "
+	            + "FROM unnest(?::character varying[]) AS county_id(value))) "
 		  	+ "GROUP BY REFLINK_OID ) "
 	  	+ "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
 	  	+ "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
@@ -62,7 +65,9 @@ public class SQLDatabaseReader {
 		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
 		  	+ "FROM nvdb.ref_link_part "
 		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
-		  	+ "AND county_id = ?  "
+		  	+ "AND county_id IN( "
+          		+ "(SELECT value "
+          		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
 		  	+ "GROUP BY REFLINK_OID ) "
 		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
 		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
@@ -81,7 +86,9 @@ public class SQLDatabaseReader {
 		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
 		  	+ "FROM nvdb.ref_link_part "
 		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
-		  	+ "AND county_id = ?  "
+		  	+ "AND county_id IN( "
+          		+ "(SELECT value "
+          		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
 		  	+ "GROUP BY REFLINK_OID ) "
 		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
 		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC;";
@@ -101,7 +108,9 @@ public class SQLDatabaseReader {
 		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
 		  	+ "FROM nvdb.ref_link_part "
 		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
-		  	+ "AND county_id = ?  "
+		  	+ "AND county_id IN( "
+	          	+ "(SELECT value "
+	            + "FROM unnest(?::character varying[]) AS county_id(value))) "
 		  	+ "GROUP BY REFLINK_OID ) "
 		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
 		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC;";
@@ -112,12 +121,17 @@ public class SQLDatabaseReader {
 		  + "\"TO_MEASURE\" AS MEASURE_TO, "
 		  + "\"FROM_REFNO\" AS REFNODE_OID_FROM, "
 		  + "\"TO_REFNODE\" AS REFNODE_OID_TO, "
-		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM, "
-		  + "ST_Length(geom) AS GEOMETRIC_LENGTH, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(links.geom))) AS GEOM, "
+		  + "ST_Length(links.geom) AS GEOMETRIC_LENGTH, "
 		  + "\"FROM_DATE\" "
-		  + "FROM nvdb.ref_link_part "
-		  + "WHERE county_id = ?  "
-		  + "AND ? between \"FROM_DATE\" AND \"TO_DATE\"";
+		  + "FROM nvdb.ref_link_part AS links "
+		  + "INNER JOIN nvdb.road_traffic_network AS net "
+		  + "ON(\"RLID\" = \"REFLINK_OI\") "
+		  + "WHERE county_id IN( "
+          	+ "(SELECT value "
+            + "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  + "AND ? between \"FROM_DATE\" AND \"TO_DATE\""
+		  + "AND \"NÄTTYP\" = 1;";
 	
 	private static final String queryNetworkSodraLanken = 
 			"SELECT \"REFLINK_OI\" AS REFLINK_OID, "
@@ -213,7 +227,7 @@ public class SQLDatabaseReader {
 	 * 
 	 * @param today
 	 *            YYYYMMDD integer.
-	 * @param region
+	 * @param regionArray
 	 *            Stockholm = "AB".
 	 * @return a <b>ResultSet</b> with columns REFLINK_OID (SQL-Varchar),
 	 *         MEASURE_FROM(SQL-float), MEASURE_TO(SQL-float),
@@ -225,10 +239,11 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getNetworkByRegion(int today, String region) throws SQLException {
+	public ResultSet getNetworkByRegion(int today, String[] regionArray) throws SQLException {
 		this.psNetwork.clearParameters();
 
-		this.psNetwork.setString(1, region);
+		Array regions = this.conn.createArrayOf("varchar", regionArray);
+		this.psNetwork.setArray(1, regions);
 		this.psNetwork.setInt(2, today);
 
 
@@ -242,7 +257,7 @@ public class SQLDatabaseReader {
 	 * 
 	 * @param today
 	 *            YYYYMMDD integer.
-	 * @param region
+	 * @param regionArray
 	 *            Stockholm = "AB".
 	 * @return a <b>ResultSet</b> with columns REFLINK_OID (SQL-Varchar),
 	 *         MEASURE_FROM(SQL-float), MEASURE_TO(SQL-float),
@@ -252,13 +267,17 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getClassificationAll(int today, String region) throws SQLException {
+	public ResultSet getClassificationAll(int today, String[] regionArray) throws SQLException {
 		this.psFunctionalRoadClassLong.clearParameters();
 
 		this.psFunctionalRoadClassLong.setInt(1, today);
-		this.psFunctionalRoadClassLong.setString(2, region);
+		
+		Array regions = this.conn.createArrayOf("varchar", regionArray);
+		this.psFunctionalRoadClassLong.setArray(2, regions);
+		
 		this.psFunctionalRoadClassLong.setInt(3, today);
 		
+		System.out.println(this.psFunctionalRoadClassLong.toString());
 		return this.psFunctionalRoadClassLong.executeQuery();
 	}
 
@@ -303,11 +322,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getLanesAll(int today, String region) throws SQLException {
+	public ResultSet getLanesAll(int today, String[] regionArray) throws SQLException {
 		this.psLanesLong.clearParameters();
 
 		this.psLanesLong.setInt(1, today);
-		this.psLanesLong.setString(2, region);
+		
+		Array regions = this.conn.createArrayOf("varchar", regionArray);
+		this.psLanesLong.setArray(2, regions);
 		this.psLanesLong.setInt(3, today);
 
 		return this.psLanesLong.executeQuery();
@@ -330,11 +351,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getForbiddedTravelDirectionAll(int today, String region) throws SQLException {
+	public ResultSet getForbiddedTravelDirectionAll(int today, String[] regionArray) throws SQLException {
 		this.psForbiddenDriveDirLong.clearParameters();
 
 		this.psForbiddenDriveDirLong.setInt(1, today);
-		this.psForbiddenDriveDirLong.setString(2, region);
+		
+		Array regions = this.conn.createArrayOf("varchar", regionArray);
+		this.psForbiddenDriveDirLong.setArray(2, regions);
 		this.psForbiddenDriveDirLong.setInt(3, today);
 
 		return this.psForbiddenDriveDirLong.executeQuery();
@@ -357,11 +380,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getSpeedLimitKmPHWithDirectionAll(int today, String region) throws SQLException {
+	public ResultSet getSpeedLimitKmPHWithDirectionAll(int today, String[] regionArray) throws SQLException {
 		this.psSpeedLong.clearParameters();
 
 		this.psSpeedLong.setInt(1, today);
-		this.psSpeedLong.setString(2, region);
+		
+		Array regions = this.conn.createArrayOf("varchar", regionArray);
+		this.psSpeedLong.setArray(2, regions);
 		this.psSpeedLong.setInt(3, today);
 
 		return this.psSpeedLong.executeQuery();
