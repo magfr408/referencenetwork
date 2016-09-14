@@ -192,7 +192,7 @@ public class RefLinkPart extends Part {
 		}
 		
 		if (this.getVelocityDirection() != null && other.getVelocityDirection() != null) {
-			if (!(this.getVelocity().equals(other.getVelocityDirection()))) {
+			if (!(this.getVelocityDirection().equals(other.getVelocityDirection()))) {
 				return false;
 			}
 		} else if (!(this.getVelocityDirection() == null && other.getVelocityDirection() == null)) {

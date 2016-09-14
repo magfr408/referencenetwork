@@ -324,7 +324,41 @@ public class RefNetwork {
 							 * try to consolidate the attributes (one common
 							 * geometry).
 							 */
-							attributes = Consolidator.Consolidate(attributes, attribute, this.geometryFactory);
+							
+							boolean sameAttributes = false;
+							for(Attribute otherAttribute : attributes)
+							{
+								if(otherAttribute.getOid().equals(attribute.getOid()) &&
+								   otherAttribute.getGeometry().equalsExact(attribute.getGeometry(),0.1) &&	
+								   otherAttribute.getMeasureFrom() == attribute.getMeasureFrom() &&
+								   otherAttribute.getMeasureTo() == attribute.getMeasureTo() &&
+								   ((otherAttribute.getVelocity() == null && attribute.getVelocity() == null) ||
+								    otherAttribute.getVelocity().equals(attribute.getVelocity())) &&
+								   ((otherAttribute.getNumberOfLanes() == null && attribute.getNumberOfLanes() == null) ||
+								   otherAttribute.getNumberOfLanes().equals(attribute.getNumberOfLanes())) &&
+								   ((otherAttribute.getFunctionalRoadClass() == null && attribute.getFunctionalRoadClass() == null) ||
+								   otherAttribute.getFunctionalRoadClass().equals(attribute.getFunctionalRoadClass())))
+								{
+									 if(otherAttribute.getUnallowedDriverDir() != null && attribute.getUnallowedDriverDir() != null &&
+									   !otherAttribute.getUnallowedDriverDir().equals(attribute.getFunctionalRoadClass()))
+									 {
+										 otherAttribute.setUnallowedDriverDir(3);
+										 sameAttributes = true;
+									 }
+									 if(otherAttribute.getVelocityDirection() != null && attribute.getVelocityDirection() != null &&
+									    !otherAttribute.getVelocityDirection().equals(attribute.getVelocityDirection()))
+									 {
+										 otherAttribute.setVelocityDirection(3);
+										 sameAttributes = true;
+										 
+									 }
+								}
+							}
+							
+							if(!sameAttributes)
+							{
+								attributes = Consolidator.Consolidate(attributes, attribute, this.geometryFactory);
+							}
 						} else if (attributes.isEmpty()) {
 							/*
 							 * 7. if the list has been emptied, then this is the
