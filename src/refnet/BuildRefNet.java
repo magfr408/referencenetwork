@@ -87,6 +87,58 @@ public class BuildRefNet {
 
 	/**
 	 * Used for testing.
+	 * @param dbr
+	 * @param today YYYYMMDD integer
+	 * @param polygonWKT bounding polygon of selection
+	 * @param SRID SRID of bounding polygon
+	 * @param loggerPath
+	 * @param logFileName
+	 * @return
+	 */
+	public static RefNetwork createRefNetwork(SQLDatabaseReader dbr, int today, String polygonWKT, int SRID, String loggerPath, String logFileName) {
+
+		ResultSet result = null;
+
+		try {
+			System.out.println("Info: Loading data from DB.");
+			result = dbr.getNetworkByPolygon(today, polygonWKT, SRID);
+			RefNetwork rn = new RefNetwork(result, loggerPath, logFileName);
+			return rn;
+		} catch (SQLException se) {
+			System.out.println("BuildRefNet: Failed to retrieve data from DB, shutting down.");
+			dbr.closeConnection();
+			se.printStackTrace();
+			System.exit(0);
+		} catch (ParseException pe) {
+			System.out.println("BuildRefNet: Failed to parse WKT-string to Geometry, shutting down.");
+			dbr.closeConnection();
+			pe.printStackTrace();
+			System.exit(0);
+		} catch (ClassCastException cce) {
+			System.out.println(
+					"BuildRefNet: Loaded geometry other than LINESTRING from DB. Don't know what to do. Shutting down.");
+			dbr.closeConnection();
+			cce.printStackTrace();
+			cce.printStackTrace();
+		} catch (IOException ioe) {
+			System.out.println("BuildRefNet: Could not create logger. Don't know what to do. Shutting down.");
+			dbr.closeConnection();
+			ioe.printStackTrace();
+			ioe.printStackTrace();
+			System.exit(0);
+		} finally {
+			try {
+				result.close();
+			} catch (SQLException e) {
+				/* Nothing */
+			}
+		}
+
+		return null;		
+	}
+	
+	/**
+	 * Used for testing.
 	 */
 	public static RefNetwork createRefNetworkSodraLanken(SQLDatabaseReader dbr, String loggerPath, String logFileName) {
 
