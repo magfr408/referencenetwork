@@ -293,7 +293,7 @@ public class SQLDatabaseReader {
 		
 		this.psNetworkByWKTPoly.setString(1, polygonWKT);
 		this.psNetworkByWKTPoly.setInt(2, SRID);
-		this.psNetwork.setInt(3, today);
+		this.psNetworkByWKTPoly.setInt(3, today);
 		
 		
 		return this.psNetworkByWKTPoly.executeQuery();
