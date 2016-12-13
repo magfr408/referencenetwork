@@ -32,6 +32,18 @@ public class BuildRefNet {
 		System.out.println("Info: Loaded " + this.networkSize() + " parts.");
 	}
 
+
+	public BuildRefNet(String host, int port, String name, String user, String password, int today,
+			String polygonWKT, int SRID, String loggerPath, String logFileName) {
+
+		this.dbr = new SQLDatabaseReader(host, port, name, user, password, 1);
+
+		this.refNet = createRefNetwork(dbr, today, polygonWKT, SRID, loggerPath, logFileName);
+		//this.refNet = createRefNetworkSodraLanken(this.dbr, loggerPath, logFileName);
+		System.out.println("Info: Done loading and sanity-checking data from DB.");
+		System.out.println("Info: Loaded " + this.networkSize() + " parts.");
+	}
+	
 	/**
 	 * Calls the creation of a new RefNetwork with parts which lies within a
 	 * whole region (län).
@@ -86,7 +98,7 @@ public class BuildRefNet {
 	}
 
 	/**
-	 * Used for testing.
+	 * Used for testing. Creates a refnetwork from reflink parts within the supplied polygon.
 	 * @param dbr
 	 * @param today YYYYMMDD integer
 	 * @param polygonWKT bounding polygon of selection
