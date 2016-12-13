@@ -23,6 +23,10 @@ public class SQLDatabaseReader {
 	private PreparedStatement psLanesLong;
 	private PreparedStatement psForbiddenDriveDirLong;
 	private PreparedStatement psSpeedLong;
+	private PreparedStatement psFunctionalRoadClassByWKTLong;
+	private PreparedStatement psLanesByWKTLong;
+	private PreparedStatement psForbiddenDriveDirByWKTLong;
+	private PreparedStatement psSpeedByWKTLong;
 	private PreparedStatement psNetwork;
 	private PreparedStatement psNetworkSodraLanken;
 	private PreparedStatement psNetworkByWKTPoly;
@@ -165,6 +169,82 @@ public class SQLDatabaseReader {
 		  + "AND ? between \"FROM_DATE\" AND \"TO_DATE\""
 		  + "AND \"NÄTTYP\" = 1;";
 	
+	private static final String queryFunctionalRoadClassByWKTLong = 
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "\"KLASS\"::integer AS functional_road_class, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.functional_road_class "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+			+ "WHERE "
+			+ "ST_WithIn(nvdb.ref_link_part.geom, ST_GeomFromText (?, ?)) "
+		  	+ "AND ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "GROUP BY REFLINK_OID ) "
+	  	+ "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+	  	+ "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
+	private static final String queryLanesByWKTLong = 
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "\"KOEFAETSAL\" as lanes, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.number_of_lanes "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+			+ "WHERE "
+			+ "ST_WithIn(nvdb.ref_link_part.geom, ST_GeomFromText (?, ?)) "
+		  	+ "AND ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "GROUP BY REFLINK_OID ) "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
+	private static final String queryForbiddenDriveDirByWKTLong = 
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 1 "
+		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 2 "
+		  + "	  ELSE 3"
+		  + "END AS forbidden_direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.prohibited_direction_of_travel "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+			+ "WHERE "
+			+ "ST_WithIn(nvdb.ref_link_part.geom, ST_GeomFromText (?, ?)) "
+		  	+ "AND ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "GROUP BY REFLINK_OID ) "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC;";
+	
+	private static final String querySpeedLimByWKTLong = 
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "\"HTHAST\"::double precision AS speed, "
+		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 1 "
+		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 2 "
+		  + "	  ELSE 3"
+		  + "END AS speed_direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.speed_limit "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+			+ "WHERE "
+			+ "ST_WithIn(nvdb.ref_link_part.geom, ST_GeomFromText (?, ?)) "
+		  	+ "AND ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "GROUP BY REFLINK_OID ) "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC;";	
+	
+	
 	/**
 	 * Default constructor, tries to make connection to DB and initializes all
 	 * prepared statements.
@@ -197,8 +277,15 @@ public class SQLDatabaseReader {
 				this.psLanesLong = this.conn.prepareStatement(queryLanesLong);
 				this.psForbiddenDriveDirLong = this.conn.prepareStatement(queryForbiddenDriveDirLong);
 				this.psSpeedLong = this.conn.prepareStatement(querySpeedLimLong);
+				// setup prepared statements as above, but these select by polygon instead of county code
+				this.psFunctionalRoadClassByWKTLong = this.conn.prepareStatement(queryFunctionalRoadClassByWKTLong);
+				this.psLanesByWKTLong = this.conn.prepareStatement(queryLanesByWKTLong);
+				this.psForbiddenDriveDirByWKTLong = this.conn.prepareStatement(queryForbiddenDriveDirByWKTLong);
+				this.psSpeedByWKTLong = this.conn.prepareStatement(querySpeedLimByWKTLong);
+				// setup prepared statements
 				this.psNetwork = this.conn.prepareStatement(queryNetwork);
 				this.psNetworkSodraLanken = this.conn.prepareStatement(queryNetworkSodraLanken);
+				// setup prepared statements, this selects by polygon instead of county code
 				this.psNetworkByWKTPoly = this.conn.prepareStatement(queryNetworkByWKTPoly);
 
 			} else {
@@ -332,6 +419,36 @@ public class SQLDatabaseReader {
 
 	/**
 	 * Passes values to prepared statement that reads the attribute (företeelse)
+	 * functional_road_class (funktionell vägklass) for all reflinks in any
+	 * polygon.
+	 * 
+	 * @param today
+	 *            YYYYMMDD integer.
+	 * @param polygonWKT
+	 *            polygon on format of well known text
+	 * @param SRID
+	 *            SRID of poly
+	 * @return a <b>ResultSet</b> with columns REFLINK_OID (SQL-Varchar),
+	 *         MEASURE_FROM(SQL-float), MEASURE_TO(SQL-float),
+	 *         functional_road_class (int) GEOM(SQL-Varchar [wkt])
+	 * @throws SQLException
+	 *             if failed to clear parameters of prepared statement, or if
+	 *             failed to set new parameters of prepared statement, or if
+	 *             failed to execute query.
+	 */
+	public ResultSet getClassificationAll(int today, String polygonWKT, int SRID) throws SQLException {
+		this.psFunctionalRoadClassByWKTLong.clearParameters();
+
+		this.psFunctionalRoadClassByWKTLong.setString(1, polygonWKT);
+		this.psFunctionalRoadClassByWKTLong.setInt(2, SRID);
+		this.psFunctionalRoadClassByWKTLong.setInt(3, today);
+				
+		System.out.println(this.psFunctionalRoadClassByWKTLong.toString());
+		return this.psFunctionalRoadClassLong.executeQuery();
+	}
+	
+	/**
+	 * Passes values to prepared statement that reads the attribute (företeelse)
 	 * functional_road_class (funktionell vägklass) for any REFLINK_OID.
 	 * 
 	 * @param today
@@ -385,6 +502,34 @@ public class SQLDatabaseReader {
 
 	/**
 	 * Passes values to prepared statement that reads the attribute (företeelse)
+	 * number of lanes for all reflinks in any polygon.
+	 * 
+	 * @param today
+	 *            YYYYMMDD integer.
+	 * @param polygonWKT
+	 *            polygon on format of well known text
+	 * @param SRID
+	 *            SRID of poly
+	 * @return a <b>ResultSet</b> with columns REFLINK_OID (SQL-Varchar),
+	 *         MEASURE_FROM(SQL-float), MEASURE_TO(SQL-float), lanes (int)
+	 *         GEOM(SQL-Varchar [wkt])
+	 * @throws SQLException
+	 *             if failed to clear parameters of prepared statement, or if
+	 *             failed to set new parameters of prepared statement, or if
+	 *             failed to execute query.
+	 */
+	public ResultSet getLanesAll(int today, String polygonWKT, int SRID) throws SQLException {
+		this.psLanesByWKTLong.clearParameters();
+
+		this.psLanesByWKTLong.setString(1, polygonWKT);
+		this.psLanesByWKTLong.setInt(2, SRID);
+		this.psLanesByWKTLong.setInt(3, today);
+
+		return this.psLanesByWKTLong.executeQuery();
+	}
+	
+	/**
+	 * Passes values to prepared statement that reads the attribute (företeelse)
 	 * forbidden_direction (Förbjuden Färdriktning) for all reflinks in any
 	 * Swedish region (län).
 	 * 
@@ -414,6 +559,35 @@ public class SQLDatabaseReader {
 
 	/**
 	 * Passes values to prepared statement that reads the attribute (företeelse)
+	 * forbidden_direction (Förbjuden Färdriktning) for all reflinks in any
+	 * polygon.
+	 * 
+	 * @param today
+	 *            YYYYMMDD integer.
+	 * @param polygonWKT
+	 *            polygon on format of well known text
+	 * @param SRID
+	 *            SRID of poly
+	 * @return a <b>ResultSet</b> with columns REFLINK_OID (SQL-Varchar),
+	 *         MEASURE_FROM(SQL-float), MEASURE_TO(SQL-float),
+	 *         forbidden_direction (int) GEOM(SQL-Varchar [wkt])
+	 * @throws SQLException
+	 *             if failed to clear parameters of prepared statement, or if
+	 *             failed to set new parameters of prepared statement, or if
+	 *             failed to execute query.
+	 */
+	public ResultSet getForbiddedTravelDirectionAll(int today, String polygonWKT, int SRID) throws SQLException {
+		this.psForbiddenDriveDirByWKTLong.clearParameters();
+
+		this.psForbiddenDriveDirByWKTLong.setString(1, polygonWKT);
+		this.psForbiddenDriveDirByWKTLong.setInt(2, SRID);
+		this.psForbiddenDriveDirByWKTLong.setInt(3, today);
+
+		return this.psForbiddenDriveDirByWKTLong.executeQuery();
+	}
+	
+	/**
+	 * Passes values to prepared statement that reads the attribute (företeelse)
 	 * speed (Högsta tillåtna hastighet) for all reflinks in any Swedish region
 	 * (län).
 	 * 
@@ -441,6 +615,35 @@ public class SQLDatabaseReader {
 		return this.psSpeedLong.executeQuery();
 	}
 
+	/**
+	 * Passes values to prepared statement that reads the attribute (företeelse)
+	 * speed (Högsta tillåtna hastighet) for all reflinks in any
+	 * polygon.
+	 * 
+	 * @param today
+	 *            YYYYMMDD integer.
+	 * @param polygonWKT
+	 *            polygon on format of well known text
+	 * @param SRID
+	 *            SRID of poly
+	 * @return a <b>ResultSet</b> with columns REFLINK_OID (SQL-Varchar),
+	 *         MEASURE_FROM(SQL-float), MEASURE_TO(SQL-float), speed
+	 *         (SQL-float), speed_direction (int) GEOM(SQL-Varchar [wkt])
+	 * @throws SQLException
+	 *             if failed to clear parameters of prepared statement, or if
+	 *             failed to set new parameters of prepared statement, or if
+	 *             failed to execute query.
+	 */
+	public ResultSet getSpeedLimitKmPHWithDirectionAll(int today, String polygonWKT, int SRID) throws SQLException {
+		this.psSpeedByWKTLong.clearParameters();
+
+		this.psSpeedByWKTLong.setString(1, polygonWKT);
+		this.psSpeedByWKTLong.setInt(2, SRID);
+		this.psSpeedByWKTLong.setInt(3, today);
+
+		return this.psSpeedByWKTLong.executeQuery();
+	}
+	
 	public ResultSet read(String query) throws SQLException {
 		Statement state = conn.createStatement();
 		ResultSet result = state.executeQuery(query);
