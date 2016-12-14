@@ -47,7 +47,8 @@ public class RefLink {
 		Collections.sort(unaligned, new CustomComparator());
 
 		RefLinkPart r;
-
+		
+		// align the parts of this
 		for (int n = 0; n < this.nbParts; n++) {
 			r = unaligned.get(n);
 
@@ -55,7 +56,7 @@ public class RefLink {
 
 			aligned.add(r);
 		}
-
+		
 		this.refLinkParts = new ArrayList<RefLinkPart>(aligned);
 	}
 
@@ -64,6 +65,10 @@ public class RefLink {
 	 * fill those with the values of other parts and then does a union of all
 	 * sequential RefLinkParts iff: they are property equal and if a from-node
 	 * can be removed (only has one incoming and one outgoing link).
+	 * 
+	 * @param geometryFactory
+	 * @param nodes all nodes of current RefNetwork
+	 * @return OIDs of Nodes that can be removed from RefNetwork (intermediate points)
 	 */
 	public ArrayList<String> clean(GeometryFactory geometryFactory, HashMap<String, RefNode> nodes) {
 
@@ -71,7 +76,8 @@ public class RefLink {
 
 		ArrayList<RefLinkPart> dirty = new ArrayList<RefLinkPart>(this.refLinkParts);
 		ArrayList<RefLinkPart> clean = new ArrayList<RefLinkPart>();
-
+		
+		//Sort ascending by <measure from>
 		Collections.sort(dirty, new CustomComparator());
 
 		RefLinkPart r1, r2;
@@ -83,7 +89,8 @@ public class RefLink {
 
 				r1.replaceNullAttributesBy(r2);
 			}
-
+			
+			//Clean the last part
 			r1 = dirty.get(dirty.size() - 1);
 			r2 = dirty.get(dirty.size() - 2);
 			r1.replaceNullAttributesBy(r2);
