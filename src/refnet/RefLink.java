@@ -87,13 +87,13 @@ public class RefLink {
 				r1 = dirty.get(n);
 				r2 = dirty.get(n + 1);
 
-				r1.replaceNullAttributesBy(r2);
+				r1.replaceNullAttributesWith(r2);
 			}
 			
 			//Clean the last part
 			r1 = dirty.get(dirty.size() - 1);
 			r2 = dirty.get(dirty.size() - 2);
-			r1.replaceNullAttributesBy(r2);
+			r1.replaceNullAttributesWith(r2);
 
 			clean.add(dirty.get(0));
 
