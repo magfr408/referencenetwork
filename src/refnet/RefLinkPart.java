@@ -106,16 +106,26 @@ public class RefLinkPart extends Part {
 	 */
 	public String toCSVString(boolean withAttribute) {
 		if (withAttribute) {
-			return (this.getOid() + ";" + String.valueOf(this.getMeasureFrom()) + ";"
-					+ String.valueOf(this.getMeasureTo()) + ";" + this.nodeFrom + ";" + this.nodeTo + ";"
-					+ this.getGeometryAsStr() + ";" + String.valueOf(this.getLength()) + ";"
-					+ String.valueOf(this.getFunctionalRoadClass()) + ";" + String.valueOf(this.getVelocity()) + ";"
-					+ String.valueOf(this.getNumberOfLanes()) + ";" + String.valueOf(this.getUnallowedDriverDir()) + ";"
+			return (this.getOid() + ";" 
+					+ String.valueOf(this.getMeasureFrom()) + ";"
+					+ String.valueOf(this.getMeasureTo()) + ";" 
+					+ this.nodeFrom + ";" 
+					+ this.nodeTo + ";"
+					+ this.getGeometryAsStr() + ";" 
+					+ String.valueOf(this.getLength()) + ";"
+					+ String.valueOf(this.getFunctionalRoadClass()) + ";" 
+					+ String.valueOf(this.getVelocity()) + ";"
+					+ String.valueOf(this.getNumberOfLanes()) + ";" 
+					+ String.valueOf(this.getUnallowedDriverDir()) + ";"
 					+ String.valueOf(this.getVelocityDirection()));
 		} else {
-			return (this.getOid() + ";" + String.valueOf(this.getMeasureFrom()) + ";"
-					+ String.valueOf(this.getMeasureTo()) + ";" + this.nodeFrom + ";" + this.nodeTo + ";"
-					+ this.getGeometryAsStr() + ";" + String.valueOf(this.getLength()));
+			return (this.getOid() + ";" 
+					+ String.valueOf(this.getMeasureFrom()) + ";"
+					+ String.valueOf(this.getMeasureTo()) + ";" 
+					+ this.nodeFrom + ";" 
+					+ this.nodeTo + ";"
+					+ this.getGeometryAsStr() + ";" 
+					+ String.valueOf(this.getLength()));
 		}
 
 	}
@@ -199,32 +209,6 @@ public class RefLinkPart extends Part {
 			return false;
 		}
 		
-		/*
-		if (!(((this.getFunctionalRoadClass() == null) && (other.getFunctionalRoadClass() == null))
-				|| (this.getFunctionalRoadClass().equals(other.getFunctionalRoadClass())))) {
-			retval = false;
-		}
-
-		if (!(((this.getNumberOfLanes() == null) && (other.getNumberOfLanes() == null))
-				|| (this.getNumberOfLanes().equals(other.getNumberOfLanes())))) {
-			retval = false;
-		}
-
-		if (!(((this.getUnallowedDriverDir() == null) && (other.getUnallowedDriverDir() == null))
-				|| (this.getUnallowedDriverDir().equals(other.getUnallowedDriverDir())))) {
-			retval = false;
-		}
-
-		if (!(((this.getVelocity() == null) && (other.getVelocity() == null))
-				|| (this.getVelocity().equals(other.getVelocity())))) {
-			retval = false;
-		}
-
-		if (!(((this.getVelocityDirection() == null) && (other.getVelocityDirection() == null))
-				|| (this.getVelocityDirection().equals(other.getVelocityDirection())))) {
-			retval = false;
-		}
-		 */
 		return retval;
 	}
 
@@ -233,9 +217,9 @@ public class RefLinkPart extends Part {
 	 * with the travel direction.
 	 */
 	public boolean aligned() {
-		if (this.getUnallowedDriverDir() != null && this.getUnallowedDriverDir() == 1) {
+		if (this.getUnallowedDriverDir() != null && this.getUnallowedDriverDir().intValue() == 1) {
 			return false;
-		} else if (this.getVelocityDirection() != null && this.getVelocityDirection() == 2) {
+		} else if (this.getVelocityDirection() != null && this.getVelocityDirection().intValue() == 2) {
 			return false;
 		} else {
 			return true;
@@ -243,7 +227,9 @@ public class RefLinkPart extends Part {
 	}
 
 	/**
-	 * Align this object so that it is given "in the travel direction".
+	 * Align this object so that it is given "in the travel direction". Reverses
+	 * geometry, reverses node order and update driving direction as well as
+	 * velocity direction
 	 */
 	public void align(GeometryFactory gf) {
 		if (!this.aligned()) {
