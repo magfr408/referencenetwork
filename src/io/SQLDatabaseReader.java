@@ -442,9 +442,10 @@ public class SQLDatabaseReader {
 		this.psFunctionalRoadClassByWKTLong.setString(1, polygonWKT);
 		this.psFunctionalRoadClassByWKTLong.setInt(2, SRID);
 		this.psFunctionalRoadClassByWKTLong.setInt(3, today);
+		this.psFunctionalRoadClassByWKTLong.setInt(4, today);
 				
 		System.out.println(this.psFunctionalRoadClassByWKTLong.toString());
-		return this.psFunctionalRoadClassLong.executeQuery();
+		return this.psFunctionalRoadClassByWKTLong.executeQuery();
 	}
 	
 	/**
@@ -524,6 +525,7 @@ public class SQLDatabaseReader {
 		this.psLanesByWKTLong.setString(1, polygonWKT);
 		this.psLanesByWKTLong.setInt(2, SRID);
 		this.psLanesByWKTLong.setInt(3, today);
+		this.psLanesByWKTLong.setInt(4, today);
 
 		return this.psLanesByWKTLong.executeQuery();
 	}
@@ -553,6 +555,7 @@ public class SQLDatabaseReader {
 		Array regions = this.conn.createArrayOf("varchar", regionArray);
 		this.psForbiddenDriveDirLong.setArray(2, regions);
 		this.psForbiddenDriveDirLong.setInt(3, today);
+		this.psForbiddenDriveDirLong.setInt(4, today);
 
 		return this.psForbiddenDriveDirLong.executeQuery();
 	}
@@ -582,6 +585,7 @@ public class SQLDatabaseReader {
 		this.psForbiddenDriveDirByWKTLong.setString(1, polygonWKT);
 		this.psForbiddenDriveDirByWKTLong.setInt(2, SRID);
 		this.psForbiddenDriveDirByWKTLong.setInt(3, today);
+		this.psForbiddenDriveDirByWKTLong.setInt(4, today);
 
 		return this.psForbiddenDriveDirByWKTLong.executeQuery();
 	}
@@ -640,6 +644,7 @@ public class SQLDatabaseReader {
 		this.psSpeedByWKTLong.setString(1, polygonWKT);
 		this.psSpeedByWKTLong.setInt(2, SRID);
 		this.psSpeedByWKTLong.setInt(3, today);
+		this.psSpeedByWKTLong.setInt(4, today);
 
 		return this.psSpeedByWKTLong.executeQuery();
 	}
