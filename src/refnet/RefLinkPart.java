@@ -230,6 +230,10 @@ public class RefLinkPart extends Part {
 	 * Align this object so that it is given "in the travel direction". Reverses
 	 * geometry, reverses node order and update driving direction as well as
 	 * velocity direction
+	 * 
+	 * @param measureMax
+	 *            the largest value of measure from/to of the parent RefLink.
+	 *            I.e. MAX(MAX(measure_to, measure_from)).
 	 */
 	public void align(GeometryFactory gf) {
 		if (!this.aligned()) {
@@ -242,6 +246,12 @@ public class RefLinkPart extends Part {
 				// After check of "aligned()" we know that vals are not null
 				this.setUnallowedDriverDir(2);
 				this.setVelocityDirection(1);
+				
+				//Update measure to/from
+				double measureToOld = this.getMeasureTo();
+				// FIXME: Precision errors?
+				this.setMeasureTo(1.0000000000000d-this.getMeasureFrom());
+				this.setMeasureFrom(1.0000000000000d-measureToOld);
 			}
 		}
 	}
