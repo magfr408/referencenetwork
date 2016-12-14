@@ -1,5 +1,7 @@
 package refnet;
 
+import java.util.HashMap;
+
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 
@@ -134,6 +136,7 @@ public class RefLinkPart extends Part {
 	 * Replace all null attribute (lanes, vel etc.) fields of this object with
 	 * those of other. Some values are only replaced iff the object has the same
 	 * direction as other.
+	 * @deprecated
 	 */
 	public void replaceNullAttributesBy(RefLinkPart other) {
 		if ((this.getFunctionalRoadClass() == null) && (other.getFunctionalRoadClass() != null)) {
@@ -159,6 +162,53 @@ public class RefLinkPart extends Part {
 		}
 	}
 
+	/**
+	 * Replace all null attribute fields (lanes, vel etc.) except for the
+	 * unallowed driving direction of this object with those of other. Some
+	 * values are only replaced iff the object has the same direction as other.
+	 * <br>
+	 * </br>
+	 * <i>Note</i>: This method considers the connectivity of the RefNetwork
+	 * (i.e. nodes has to be populated with incoming and outgoing links before
+	 * the call). In some instances, a RefLink can be cut by another RefLinkPart
+	 * as indicated by below.
+	 * 
+	 * <pre>
+	 * 1 ________  _________ 3
+	 * 2 ________/
+	 * </pre>
+	 * 
+	 * In the example, RefLinkPart 3 could have a forbidden driving direction =
+	 * null (travel is allowed in both directions) but RefLinkPart 1 could have
+	 * a driving direction = 2 (cannot drive against direction). This happens
+	 * sometimes when e.g. roundabouts are drawn, No 1 and 3 have the same
+	 * RefLinkOID and is therefore considered to be part of the same RefLink,
+	 * whilst No 2 have another OID (and leads out of the roundabout). Thus, if
+	 * we take the null value of 3 and replace it with the value of 1, then
+	 * traffic cannot move from 2 to 3.
+	 * 
+	 * @param other
+	 * @param nodes
+	 */
+	public void replaceNullAttributesBy(RefLinkPart other, HashMap<String, RefNode> nodes) {
+		if ((this.getFunctionalRoadClass() == null) && (other.getFunctionalRoadClass() != null)) {
+			this.setClassification(other.getFunctionalRoadClass());
+		}
+
+		if ((this.getNumberOfLanes() == null) && (other.getNumberOfLanes() != null)) {
+			this.setLanes(other.getNumberOfLanes());
+		}
+		
+		if (this.getNodeFrom().equals(other.getNodeTo()) || (this.getNodeTo().equals(other.getNodeFrom()))) {
+			if ((this.getVelocity() == null) && (other.getVelocity() != null)) {
+				this.setVelocity(other.getVelocity());
+			}
+	
+			if ((this.getVelocityDirection() == null) && (other.getVelocityDirection() != null)) {
+				this.setVelocityDirection(other.getVelocityDirection());
+			}
+		}
+	}
 	/**
 	 * Returns true if all attributes of this equals those of other.
 	 */
