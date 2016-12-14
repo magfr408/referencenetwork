@@ -43,6 +43,7 @@ public class RefLink {
 		ArrayList<RefLinkPart> unaligned = new ArrayList<RefLinkPart>(this.refLinkParts);
 		ArrayList<RefLinkPart> aligned = new ArrayList<RefLinkPart>();
 
+		// Sort ascending by value of measure from
 		Collections.sort(unaligned, new CustomComparator());
 
 		RefLinkPart r;
@@ -50,9 +51,7 @@ public class RefLink {
 		for (int n = 0; n < this.nbParts; n++) {
 			r = unaligned.get(n);
 
-			if (!r.aligned()) {
-				r.align(geometryFactory);
-			}
+			r.align(geometryFactory);
 
 			aligned.add(r);
 		}
