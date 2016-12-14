@@ -239,7 +239,7 @@ public class RefLinkPart extends Part {
 				this.setNodeTo(this.getNodeFrom());
 				this.setNodeFrom(oldTo);
 
-				// TODO: Always ok? Or should we check for null first?
+				// After check of "aligned()" we know that vals are not null
 				this.setUnallowedDriverDir(2);
 				this.setVelocityDirection(1);
 			}
