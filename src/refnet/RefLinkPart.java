@@ -163,15 +163,14 @@ public class RefLinkPart extends Part {
 	}
 
 	/**
-	 * Replace all null attribute fields (lanes, vel etc.) except for the
+	 * Replace all null attribute fields (lanes, vel etc.) <b>except</b> for the
 	 * unallowed driving direction of this object with those of other. Some
 	 * values are only replaced iff the object has the same direction as other.
 	 * <br>
 	 * </br>
-	 * <i>Note</i>: This method considers the connectivity of the RefNetwork
-	 * (i.e. nodes has to be populated with incoming and outgoing links before
-	 * the call). In some instances, a RefLink can be cut by another RefLinkPart
-	 * as indicated by below.
+	 * <i>Note</i>: This method replaces old version since it did not consider
+	 * the connectivity of the RefNetwork. In some instances, a RefLink can be
+	 * cut by another RefLinkPart as indicated by below.
 	 * 
 	 * <pre>
 	 * 1 ________  _________ 3
@@ -188,9 +187,8 @@ public class RefLinkPart extends Part {
 	 * traffic cannot move from 2 to 3.
 	 * 
 	 * @param other
-	 * @param nodes
 	 */
-	public void replaceNullAttributesBy(RefLinkPart other, HashMap<String, RefNode> nodes) {
+	public void replaceNullAttributesWith(RefLinkPart other) {
 		if ((this.getFunctionalRoadClass() == null) && (other.getFunctionalRoadClass() != null)) {
 			this.setClassification(other.getFunctionalRoadClass());
 		}
