@@ -48,7 +48,11 @@ public class Part {
 	 * @param functionalRoadClass
 	 *            int value between 0 and 9 (& null).
 	 * @param unallDriveDir
-	 *            int value between 1 and 3 (& null).
+	 *            int value between 1 and 3 (& null). 1 = cannot drive from from
+	 *            node (to to node), 2 = cannot drive from to node (from to
+	 *            node), 3 = cannot drive in any direction, null = both
+	 *            directions open. I.e. forbidded driving direction is (1 =
+	 *            with, 2 = against, 3 = both, null = neither).
 	 * @throws IllegalArgumentException
 	 *             if any parameter has an illegal value (outside value range).
 	 */
