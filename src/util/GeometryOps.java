@@ -187,7 +187,7 @@ public class GeometryOps {
 	 * @param allowSlack
 	 * @return an array of LineStrings of length |P|+1, or null if the split was
 	 *         unsuccessful, i.e. if the processed cast a
-	 *         java.lang.ClassCaseException at LineString linestring =
+	 *         java.lang.ClassCastException at LineString linestring =
 	 *         (LineString) Geometry object.
 	 */
 	public static LineString[] splitBy(LineString L, Point[] P, GeometryFactory gf, double tolerance,
