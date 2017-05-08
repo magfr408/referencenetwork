@@ -103,4 +103,95 @@ public class Attribute
 		return true;
 	}
 	
+	
+	public void validate()
+	{
+		if (this.direction.intValue() < 1 || this.direction.intValue() > 3)
+		{
+			throw new IllegalArgumentException("The direction of an attribute must be {1,2,3}.");
+		}
+		switch (this.type)
+		{
+			// Validation of functional road class.
+			case FUNCTIONAL_ROADCLASS:
+			
+				// Checking for Integer.
+				if (!(this.value instanceof Integer)) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+													 + " must have a value of type " + Integer.class.getName());
+				}
+				
+				// Checking for value in range [0 , 9].
+				if (((Integer)this.value).intValue() < 0 || ((Integer)this.value).intValue() > 9) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 								 + " must have a value between 0 and 9.");
+				}
+				
+				break;
+			
+			// Validation of number of lanes.
+			case LANES:
+				
+				// Checking for integer.
+				if (!(this.value instanceof Integer)) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 + " must have a value of type " + Integer.class.getName());
+				}
+				
+				// Checking for positive values.
+				if (((Integer)this.value).intValue() < 0) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 								 + " must have a positive value.");
+				}
+				
+				break;
+				
+			// Validation of forbidden driver direction.
+			case FORBIDDEN_DRIVER_DIRECTION:
+				
+				// Checking for boolean.
+				if (!(this.value instanceof Boolean)) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 + " must have a value of type " + Boolean.class.getName());
+				}
+				
+				break;
+				
+			// Validation of speed limit.
+			case SPEED_LIMIT:
+				
+				// Checking for Double
+				if (!(this.value instanceof Double)) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 + " must have a value of type " + Double.class.getName());
+				}
+				
+				// Checking for positive values.
+				if (((Double)this.value).doubleValue() < 0) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 + " must have a positive value.");
+				}
+				
+				break;
+				
+			default:
+				throw new UnsupportedOperationException(this.type + " is not supported in the validation yet.");
+				
+		}
+	}
+
+	public void setDirection(Integer direction) 
+	{
+		
+		this.direction = direction;
+		
+	}
+
 }	
