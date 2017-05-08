@@ -22,7 +22,7 @@ public class Attribute
 		LIVING_STREET,
 		MOTORWAY,
 		MOTORWAY_WITHOUT_A_CENTRAL_RESERVATION,
-		LANES,
+		NUMBER_OF_LANES,
 		PEDESTRIAN_STREET, 
 		FORBIDDEN_DRIVER_DIRECTION,
 		ROAD_MANAGER,
@@ -135,7 +135,7 @@ public class Attribute
 				break;
 			
 			// Validation of number of lanes.
-			case LANES:
+			case NUMBER_OF_LANES:
 				
 				// Checking for integer.
 				if (!(this.value instanceof Integer)) 
