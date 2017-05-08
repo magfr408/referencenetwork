@@ -1,68 +1,62 @@
 package refnet;
 
+import java.util.HashMap;
+
 import com.vividsolutions.jts.geom.LineString;
+
+import refnet.Attribute.AttributeType;
 
 /**
  * Shell to Part which is used to compare the attributes of Parts.
  * 
  * @author Magnus Fransson, magnus.fransson@sweco.se
- * @version 1.0
+ * @author Modified by Rasmus Ringdahl Linköpings University
+ * @version 2.0
  */
-public class AttributePart extends Part {
+public class AttributePart extends Part 
+{
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public AttributePart(String refLinkOid, LineString geometry, double measureFrom, double measureTo, Double velocity,
-			Integer velocityDirection, Integer nbLanes, Integer classificationNo, Integer unallowedDirection) throws IllegalArgumentException {
+	public AttributePart(String refLinkOid, LineString geometry, double measureFrom, double measureTo, 
+						 HashMap<AttributeType, Attribute> attributes) 
+														throws IllegalArgumentException 
+	{
 
-		super(refLinkOid, geometry, measureFrom, measureTo, velocity, velocityDirection, nbLanes, classificationNo,
-				unallowedDirection);
+		super(refLinkOid, geometry, measureFrom, measureTo, attributes);
 	}
 
 	/**
 	 * @return all the fields of this object as a ;-separated String. The
 	 *         Geometry will be in WKT-format.
 	 */
-	public String toCSVStringWithoutAttributes() {
-		return (this.getOid() + ";" + String.valueOf(this.getMeasureFrom()) + ";" + String.valueOf(this.getMeasureTo())
-				+ ";" + this.getGeometryAsStr());
+	public String toCSVStringWithoutAttributes() 
+	{
+		return (this.getOid() + ";" 
+				+ String.valueOf(this.getMeasureFrom()) + ";" 
+				+ String.valueOf(this.getMeasureTo()) + ";" 
+				+ this.getGeometryAsStr());
 	}
 
 	/**
 	 * Returns true if all attributes of this equals those of other.
 	 */
-	public boolean propertyEqual(AttributePart other) {
+	public boolean propertyEqual(AttributePart other) 
+	{
 		boolean retval = true;
-
+		
+		// Checking if the other AttributePart has the same OID.
 		if (!this.getOid().equals(other.getOid())) {
 			retval = false;
 		}
 
-		if (!(((this.getFunctionalRoadClass() == null) && (other.getFunctionalRoadClass() == null))
-				|| (this.getFunctionalRoadClass().equals(other.getFunctionalRoadClass())))) {
-			retval = false;
+		// Checking if the other AttributePart has the same attributes.
+		if (!this.attributes.equals(other.attributes))
+		{
+			return false;
 		}
-
-		if (!(((this.getNumberOfLanes() == null) && (other.getNumberOfLanes() == null))
-				|| (this.getNumberOfLanes().equals(other.getNumberOfLanes())))) {
-			retval = false;
-		}
-
-		if (!(((this.getUnallowedDriverDir() == null) && (other.getUnallowedDriverDir() == null))
-				|| (this.getUnallowedDriverDir().equals(other.getUnallowedDriverDir())))) {
-			retval = false;
-		}
-
-		if (!(((this.getVelocity() == null) && (other.getVelocity() == null))
-				|| (this.getVelocity().equals(other.getVelocity())))) {
-			retval = false;
-		}
-
-		if (!(((this.getVelocityDirection() == null) && (other.getVelocityDirection() == null))
-				|| (this.getVelocityDirection().equals(other.getVelocityDirection())))) {
-			retval = false;
-		}
+		
 
 		return retval;
 	}
