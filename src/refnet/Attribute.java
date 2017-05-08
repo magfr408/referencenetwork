@@ -33,6 +33,13 @@ public class Attribute
 		WEARING_COURSE;
 	}
 
+	public enum DirectionCategories
+	{
+		WITH,
+		AGAINST,
+		WITH_AND_AGAINST,
+		NOT_SPECIFIED
+	}
 	/**
 	 * This is the type of attribute.
 	 */
@@ -45,7 +52,7 @@ public class Attribute
 	 * 3 = both directions.
 	 * TODO: Change to boolean?
 	 */
-	private Integer direction;
+	private DirectionCategories direction;
 	
 	/**
 	 * The value of the attribute.
@@ -59,7 +66,7 @@ public class Attribute
 	 * @param direction
 	 * @param value
 	 */
-	public Attribute(AttributeType type, Integer direction, Object value)
+	public Attribute(AttributeType type, DirectionCategories direction, Object value)
 	{
 		this.type = type;
 		this.direction = direction;
@@ -77,7 +84,7 @@ public class Attribute
 	 * The method gets the direction of the attribute.
 	 * @return direction (1 = with the geometry, 2 = against the geometry, 3 = both directions).
 	 */
-	public Integer getDirection() {return this.direction;}
+	public DirectionCategories getDirection() {return this.direction;}
 	
 	/**
 	 * This method gets the attribute value.
@@ -106,10 +113,6 @@ public class Attribute
 	
 	public void validate()
 	{
-		if (this.direction.intValue() < 1 || this.direction.intValue() > 3)
-		{
-			throw new IllegalArgumentException("The direction of an attribute must be {1,2,3}.");
-		}
 		switch (this.type)
 		{
 			// Validation of functional road class.
@@ -187,7 +190,7 @@ public class Attribute
 		}
 	}
 
-	public void setDirection(Integer direction) 
+	public void setDirection(DirectionCategories direction) 
 	{
 		
 		this.direction = direction;
