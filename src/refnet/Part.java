@@ -97,16 +97,6 @@ public class Part {
 		this.unallowedDriveDir = unallDriveDir;
 	}
 
-	/**
-	 * The different kinds of attributes, could be useful...
-	 * 
-	 * @author Magnus Fransson
-	 * @version 1.0
-	 */
-	public enum AttributeTypes {
-		SPEED, LANES, FUNCTIONAL_ROADCLASS, FORBIDDEN_DRIVER_DIRECTION;
-	}
-
 	public String getOid() {
 		return this.refLinkOid;
 	}
