@@ -8,12 +8,12 @@ import com.vividsolutions.jts.geom.LineString;
  * @author Magnus Fransson, magnus.fransson@sweco.se
  * @version 1.0
  */
-public class Attribute extends Part {
+public class AttributePart extends Part {
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public Attribute(String refLinkOid, LineString geometry, double measureFrom, double measureTo, Double velocity,
+	public AttributePart(String refLinkOid, LineString geometry, double measureFrom, double measureTo, Double velocity,
 			Integer velocityDirection, Integer nbLanes, Integer classificationNo, Integer unallowedDirection) throws IllegalArgumentException {
 
 		super(refLinkOid, geometry, measureFrom, measureTo, velocity, velocityDirection, nbLanes, classificationNo,
@@ -32,7 +32,7 @@ public class Attribute extends Part {
 	/**
 	 * Returns true if all attributes of this equals those of other.
 	 */
-	public boolean propertyEqual(Attribute other) {
+	public boolean propertyEqual(AttributePart other) {
 		boolean retval = true;
 
 		if (!this.getOid().equals(other.getOid())) {

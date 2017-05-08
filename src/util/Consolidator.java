@@ -7,7 +7,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 
 import io.Logger;
-import refnet.Attribute;
+import refnet.AttributePart;
 import refnet.CustomComparator;
 import refnet.RefLinkPart;
 
@@ -19,7 +19,7 @@ public class Consolidator {
 	 * other attribute in the list, and their geometries overlap, then they are
 	 * appended to each other, creating a longer attribute.
 	 */
-	public static ArrayList<Attribute> Consolidate(ArrayList<Attribute> attributes, Attribute attribute,
+	public static ArrayList<AttributePart> Consolidate(ArrayList<AttributePart> attributes, AttributePart attribute,
 			GeometryFactory gf) {
 		return Consolidator.addToList(attributes, attribute, gf);
 	}
@@ -28,8 +28,8 @@ public class Consolidator {
 	 * Add attribute attributeWithoutGeom to the list of attributes and then
 	 * sorts attributes in ascending order.
 	 */
-	public static ArrayList<Attribute> ConsolidateWithoutGeom(ArrayList<Attribute> attributes,
-			Attribute attributeWithoutGeom, GeometryFactory geometryFactory, Logger logger) {
+	public static ArrayList<AttributePart> ConsolidateWithoutGeom(ArrayList<AttributePart> attributes,
+			AttributePart attributeWithoutGeom, GeometryFactory geometryFactory, Logger logger) {
 
 		Collections.sort(attributes, new CustomComparator());
 
@@ -65,7 +65,7 @@ public class Consolidator {
 		return attributes;
 	}
 
-	static ArrayList<Attribute> addToList(ArrayList<Attribute> attributes, Attribute attribute, GeometryFactory gf) {
+	static ArrayList<AttributePart> addToList(ArrayList<AttributePart> attributes, AttributePart attribute, GeometryFactory gf) {
 		boolean add = true;
 
 		for (int i = 0; i < attributes.size(); i++) {

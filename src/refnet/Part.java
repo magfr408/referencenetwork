@@ -254,7 +254,7 @@ public class Part {
 	 * Adds the values of the attribute to the objects corresponding fields. If
 	 * the value equals (==) null, it is ignored.
 	 */
-	public void addAttribute(Attribute attribute) {
+	public void addAttribute(AttributePart attribute) {
 		if (attribute.getNumberOfLanes() != null) {
 			this.setLanes(attribute.getNumberOfLanes());
 		}

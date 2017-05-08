@@ -186,7 +186,7 @@ public class RefLink {
 	 * @return HashSet<RefNode> new nodes generated with <b>nmg</b> to be added
 	 *         to RefNetworks list of nodes.
 	 */
-	public HashSet<RefNode> addAttributeByGeom(Attribute attribute, GeometryFactory gf, NameGenerator nmg,
+	public HashSet<RefNode> addAttributeByGeom(AttributePart attribute, GeometryFactory gf, NameGenerator nmg,
 			double tolerance, boolean allowSlack, Logger logger) {
 
 		HashSet<RefNode> newNodes = new HashSet<RefNode>();

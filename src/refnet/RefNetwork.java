@@ -168,7 +168,7 @@ public class RefNetwork {
 	 * method assumes that each entry in attributes have been added to the list
 	 * through util.Consolidate.
 	 */
-	public void addAttribute(ArrayList<Attribute> attributes, String refLinkOid) {
+	public void addAttribute(ArrayList<AttributePart> attributes, String refLinkOid) {
 		if ((!(attributes.isEmpty())) && (this.refLinks.containsKey(attributes.get(0).getOid()))) {
 
 			RefLink rl = this.refLinks.get(attributes.get(0).getOid());
@@ -254,9 +254,9 @@ public class RefNetwork {
 	 */
 	public void addAttribute(ResultSet attr) throws SQLException {
 
-		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
-		Attribute attribute = null;
-		Attribute attributeNoGeom = null;
+		ArrayList<AttributePart> attributes = new ArrayList<AttributePart>();
+		AttributePart attribute = null;
+		AttributePart attributeNoGeom = null;
 		boolean hasAttributeNoGeom = false;
 		String prevOid = null;
 		String currOid = null;
@@ -314,7 +314,7 @@ public class RefNetwork {
 						// 5. Create new attribute
 						attributeGeom = (LineString) wktReader.read(attributeGeomStr);
 
-						attribute = new Attribute(refLinkOid, attributeGeom, attributeFromMeasure, attributeToMeasure,
+						attribute = new AttributePart(refLinkOid, attributeGeom, attributeFromMeasure, attributeToMeasure,
 								vel, velDir, lanes, classification, unallowedDriveDir);
 
 						if ((prevOid != null) && (currOid.equals(prevOid))) {
@@ -326,7 +326,7 @@ public class RefNetwork {
 							 */
 							
 							boolean sameAttributes = false;
-							for(Attribute otherAttribute : attributes)
+							for(AttributePart otherAttribute : attributes)
 							{
 								if(otherAttribute.getOid().equals(attribute.getOid()) &&
 								   otherAttribute.getGeometry().equalsExact(attribute.getGeometry(),0.1) &&	
@@ -398,7 +398,7 @@ public class RefNetwork {
 					}
 				} else {
 					try {
-						attributeNoGeom = new Attribute(refLinkOid, null, attributeFromMeasure, attributeToMeasure, vel,
+						attributeNoGeom = new AttributePart(refLinkOid, null, attributeFromMeasure, attributeToMeasure, vel,
 								velDir, lanes, classification, unallowedDriveDir);
 						hasAttributeNoGeom = true;
 					} catch (IllegalArgumentException iae) {
