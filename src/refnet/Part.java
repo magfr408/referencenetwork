@@ -1,9 +1,14 @@
 package refnet;
 
+import java.util.HashMap;
+import java.util.Map.Entry;
+
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
+
+import refnet.Attribute.AttributeType;
 import util.GeometryOps;
 
 /**
@@ -11,19 +16,17 @@ import util.GeometryOps;
  * in the network. Common denominator of RefLinkParts and Attributes.
  * 
  * @author Magnus Fransson, magnus.fransson@sweco.se
- * @version 1.0
+ * @author Modified by Rasmus Ringdahl Linköpings University
+ * @version 2.0
  */
-public class Part {
+public class Part 
+{
 	private final String refLinkOid;
 	private double measureFrom;
 	private double measureTo;
 	private LineString geom;
 	private double length;
-	private Double vel;
-	private Integer velDirection;
-	private Integer lanes;
-	private Integer functionalRoadClass;
-	private Integer unallowedDriveDir;
+	protected HashMap<AttributeType, Attribute> attributes;
 
 	/**
 	 * Default constructor.
@@ -39,62 +42,42 @@ public class Part {
 	 *            is a value greater than 0 and less than or equal to 1 that
 	 *            represents the relative end position of this part on the
 	 *            RefLink parent.
-	 * @param velocity
-	 *            posted speed limit in kmph.
-	 * @param velocityDirection
-	 *            Direction of posted speed limit.
-	 * @param nbLanes
-	 *            number of lanes on this reflinkpart.
-	 * @param functionalRoadClass
-	 *            int value between 0 and 9 (& null).
-	 * @param unallDriveDir
-	 *            int value between 1 and 3 (& null). 1 = cannot drive from from
-	 *            node (to to node), 2 = cannot drive from to node (from to
-	 *            node), 3 = cannot drive in any direction, null = both
-	 *            directions open. I.e. forbidded driving direction is (1 =
-	 *            with, 2 = against, 3 = both, null = neither).
+	 * @param attributes
+	 *            HashMap with attributes.
 	 * @throws IllegalArgumentException
 	 *             if any parameter has an illegal value (outside value range).
 	 */
-	public Part(String refLinkOid, LineString geometry, double measureFrom, double measureTo, Double velocity,
-			Integer velocityDirection, Integer nbLanes, Integer functionalRoadClass, Integer unallDriveDir) {
+	public Part(String refLinkOid, LineString geometry, double measureFrom, double measureTo,
+				HashMap<AttributeType, Attribute> attributes) 
+	{
 
-		if ((Double.compare(measureFrom, measureTo) == 0) && (Double.compare(measureFrom, measureTo) > 0)) {
+		if ((Double.compare(measureFrom, measureTo) == 0) && (Double.compare(measureFrom, measureTo) > 0)) 
+		{
 			throw new IllegalArgumentException("measureFrom must be less than measureTo.");
-		} else if ((velocity != null) && (Double.compare(0.0d, velocity) > 0)) {
-			throw new IllegalArgumentException("velocity must be null or >= 0.0D.");
-		} else if (velocityDirection != null) {
-			if ((velocityDirection.intValue() < 1) || (velocityDirection.intValue() > 3)) {
-				throw new IllegalArgumentException("velocityDirection must be null or 1, 2 or 3.");
-			}
-		} else if (nbLanes != null) {
-			if (nbLanes.intValue() < 0) {
-				throw new IllegalArgumentException("Number of lanes must be null or positive.");
-			}
-		} else if (functionalRoadClass != null) {
-			if ((functionalRoadClass.intValue() < 0) || (functionalRoadClass.intValue() > 9)) {
-				throw new IllegalArgumentException("Functional Road Class must be null or in 0-9.");
-			}
-		} else if (unallDriveDir != null) {
-			if ((unallDriveDir.intValue() < 1) || (unallDriveDir.intValue() > 3)) {
-				throw new IllegalArgumentException("unallDriveDir must be null or 1, 2 or 3.");
-			}
+		} 
+		
+		if (attributes == null)
+		{
+			this.attributes = new HashMap<AttributeType, Attribute>();
+		}
+		else
+		{
+			attributes.values().stream().forEach(t -> t.validate());
 		}
 
 		this.refLinkOid = refLinkOid;
 		this.measureFrom = measureFrom;
 		this.measureTo = measureTo;
 		this.geom = geometry;
-		try {
-			this.length = this.geom.getLength();
-		} catch (java.lang.NullPointerException npe) {
+		
+		if (this.geom == null)
+		{
 			this.length = 0.0d;
 		}
-		this.vel = velocity;
-		this.velDirection = velocityDirection;
-		this.lanes = nbLanes;
-		this.functionalRoadClass = functionalRoadClass;
-		this.unallowedDriveDir = unallDriveDir;
+		else
+		{
+			this.length = this.geom.getLength();
+		} 
 	}
 
 	public String getOid() {
@@ -175,93 +158,30 @@ public class Part {
 		this.measureFrom = meas;
 	}
 
-	public Double getVelocity() {
-		return this.vel;
+	public Attribute getAttribute(Attribute.AttributeType type) 
+	{
+		return this.getAttribute(type);
 	}
 
-	public Integer getVelocityDirection() {
-		return this.velDirection;
-	}
-
-	public Integer getNumberOfLanes() {
-		return this.lanes;
-	}
-
-	public Integer getFunctionalRoadClass() {
-		return this.functionalRoadClass;
-	}
-
-	public Integer getUnallowedDriverDir() {
-		return this.unallowedDriveDir;
-	}
-
-	/**
-	 * Replace the current posted speed limit.
-	 */
-	public void setVelocity(double velocity) {
-		if (velocity >= 0) {
-			this.vel = velocity;
-		}
-	}
-
-	/**
-	 * Replace the current direction of the posted speed limit.
-	 */
-	public void setVelocityDirection(Integer velocityDirection) {
-		if ((velocityDirection >= 1) && (velocityDirection <= 3)) {
-			this.velDirection = velocityDirection;
-		}
-	}
-
-	/**
-	 * Replace the current number of lanes.
-	 */
-	public void setLanes(int nbLanes) {
-		if (nbLanes >= 0) {
-			this.lanes = nbLanes;
-		}
-	}
-
-	/**
-	 * Replace the current functional road class.
-	 */
-	public void setClassification(int classific) {
-		if ((classific >= 0) && (classific <= 9)) {
-			this.functionalRoadClass = classific;
-		}
-	}
-
-	/**
-	 * Replace the current forbidden driving direction.
-	 */
-	public void setUnallowedDriverDir(int unaDriveDir) {
-		if ((unaDriveDir >= 1) && (unaDriveDir <= 3)) {
-			this.unallowedDriveDir = unaDriveDir;
-		}
+	public HashMap<AttributeType, Attribute> getAttributeMap() 
+	{
+		return this.attributes;
 	}
 
 	/**
 	 * Adds the values of the attribute to the objects corresponding fields. If
 	 * the value equals (==) null, it is ignored.
 	 */
-	public void addAttribute(AttributePart attribute) {
-		if (attribute.getNumberOfLanes() != null) {
-			this.setLanes(attribute.getNumberOfLanes());
-		}
-
-		if (attribute.getVelocity() != null) {
-			this.setVelocity(attribute.getVelocity());
-		}
-
-		if (attribute.getVelocityDirection() != null) {
-			this.setVelocityDirection(attribute.getVelocityDirection());
-		}
-		if (attribute.getFunctionalRoadClass() != null) {
-			this.setClassification(attribute.getFunctionalRoadClass());
-		}
-
-		if (attribute.getUnallowedDriverDir() != null) {
-			this.setUnallowedDriverDir(attribute.getUnallowedDriverDir());
+	public void addAttribute(AttributePart attributePart) 
+	{
+		for( Entry<AttributeType, Attribute> entry : attributePart.getAttributeMap().entrySet())
+		{
+			// Checks for attribute existence.
+			if(this.attributes.containsKey(entry.getKey()))
+			{
+				// Replaces the value if the attribute exists.
+				this.attributes.put(entry.getKey(), entry.getValue());
+			}
 		}
 	}
 
