@@ -63,6 +63,7 @@ public class Part
 		else
 		{
 			attributes.values().stream().forEach(t -> t.validate());
+			this.attributes = attributes;
 		}
 
 		this.refLinkOid = refLinkOid;
