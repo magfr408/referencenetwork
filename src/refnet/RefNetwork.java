@@ -266,8 +266,7 @@ public class RefNetwork {
 		String refLinkOid, attributeGeomStr;
 		LineString attributeGeom;
 		double attributeFromMeasure, attributeToMeasure;
-		Double vel;
-		Integer velDir, lanes, classification, unallowedDriveDir;
+
 
 		while (attr.next()) 
 		{
