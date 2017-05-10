@@ -56,13 +56,18 @@ public class Part
 			throw new IllegalArgumentException("measureFrom must be less than measureTo.");
 		} 
 		
+		// Adding attributes to the part.
 		if (attributes == null)
 		{
+			// Creating a new HashMap if the input is null.
 			this.attributes = new HashMap<AttributeType, Attribute>();
 		}
 		else
 		{
+			// Validating all the attributes.
 			attributes.values().stream().forEach(t -> t.validate());
+			
+			// Setting the attributes.
 			this.attributes = attributes;
 		}
 
@@ -161,7 +166,7 @@ public class Part
 
 	public Attribute getAttribute(Attribute.AttributeType type) 
 	{
-		return this.getAttribute(type);
+		return this.attributes.get(type);
 	}
 
 	public HashMap<AttributeType, Attribute> getAttributeMap() 
