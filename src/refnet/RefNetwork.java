@@ -171,13 +171,16 @@ public class RefNetwork {
 	 * method assumes that each entry in attributes have been added to the list
 	 * through util.Consolidate.
 	 */
-	public void addAttribute(ArrayList<AttributePart> attributes, String refLinkOid) {
-		if ((!(attributes.isEmpty())) && (this.refLinks.containsKey(attributes.get(0).getOid()))) {
+	public void addAttribute(ArrayList<AttributePart> attributes, String refLinkOid) 
+	{
+		if ((!(attributes.isEmpty())) && (this.refLinks.containsKey(attributes.get(0).getOid()))) 
+		{
 
 			RefLink rl = this.refLinks.get(attributes.get(0).getOid());
 			HashSet<RefNode> nodesToAdd = new HashSet<RefNode>();
 
-			for (int i = 0; i < attributes.size(); i++) {
+			for (int i = 0; i < attributes.size(); i++) 
+			{
 				try {
 					/*
 					 * this.refNodes.addAll(rl.addAttributeByGeom(attributes.get
@@ -185,7 +188,7 @@ public class RefNetwork {
 					 * RefNetwork.tolerance, true, this.logger));
 					 */
 					nodesToAdd = rl.addAttributeByGeom(attributes.get(i), this.geometryFactory, this.nmg,
-							RefNetwork.tolerance, true, this.logger);
+													   RefNetwork.tolerance, true, this.logger);
 
 					for (RefNode nodeToAdd : nodesToAdd) {
 						if (!(this._refNodes.containsKey(nodeToAdd.getOid()))) {
@@ -522,13 +525,29 @@ public class RefNetwork {
 	public void writeToFile(String path, String fileName, boolean withAttributes, AttributeType[] usedAttributes) {
 		try {
 			FileWriters fw = new FileWriters(path, fileName);
-			String heading = "REFLINK_OID;MEASURE_FROM;MEASURE_TO;REFNODE_OID_FROM;REFNODE_OID_TO;GEOM;GEOMETRIC_LENGTH";
+			StringBuilder heading = new StringBuilder();
+			heading.append("REFLINK_OID;MEASURE_FROM;MEASURE_TO;"
+						 + "REFNODE_OID_FROM;REFNODE_OID_TO;GEOM;GEOMETRIC_LENGTH");
 
-			if (withAttributes) {
-				heading = heading + ";FUNKTIONELL_VAGKLASS;HASTIGHET;KORFALT;FORBJUDEN_FARDRIKTNING;HASTIGHET_RIKTNING";
+			if (withAttributes) 
+			{
+				if(usedAttributes.length > 0)
+				{
+					heading.append(";");
+				}
+				
+				for (int i = 0 ; i < usedAttributes.length ; i ++)
+				{
+					heading.append(usedAttributes[i].name());
+					
+					if (i < usedAttributes.length - 1)
+					{
+						heading.append(";");
+					}
+				}
 			}
 
-			fw.FileWritersAppendRow(heading);
+			fw.FileWritersAppendRow(heading.toString());
 
 			for (RefLink rf : this.refLinks.values()) {
 				int idx = 0;
