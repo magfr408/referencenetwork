@@ -183,7 +183,7 @@ public class Part
 		for( Entry<AttributeType, Attribute> entry : attributePart.getAttributeMap().entrySet())
 		{
 			// Checks for attribute existence.
-			if(this.attributes.containsKey(entry.getKey()))
+			if(entry.getValue() != null)
 			{
 				// Replaces the value if the attribute exists.
 				this.attributes.put(entry.getKey(), entry.getValue());
