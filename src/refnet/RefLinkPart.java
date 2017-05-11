@@ -124,7 +124,11 @@ public class RefLinkPart extends Part {
 			strBuilder.append(";");
 			for (int i = 0 ; i < usedAttributes.length ; i++)
 			{
-				strBuilder.append(String.valueOf(this.getAttribute(usedAttributes[i]).getValue()));
+				Attribute attribute = this.getAttribute(usedAttributes[i]);
+				if (attribute != null)
+				{
+					strBuilder.append(String.valueOf(attribute.getValue()));
+				}
 				
 				if (i < usedAttributes.length -1)
 				{
@@ -165,7 +169,7 @@ public class RefLinkPart extends Part {
 	{
 		for (Entry<AttributeType, Attribute> entry : other.attributes.entrySet())
 		{
-			if (this.attributes.get(entry.getKey()) == null)
+			if (entry.getValue() != null && this.attributes.get(entry.getKey()) == null)
 			{
 				// Ignoring Forbidden driving direction.
 				if (entry.getKey().equals(AttributeType.FORBIDDEN_DRIVER_DIRECTION))
@@ -194,6 +198,7 @@ public class RefLinkPart extends Part {
 	public boolean propertyEqual(RefLinkPart other) 
 	{
 
+		// Checking if the other RefLinkPart has the same Oid.
 		if (!this.getOid().equals(other.getOid())) 
 		{
 			return false;
