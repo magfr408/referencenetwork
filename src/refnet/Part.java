@@ -57,18 +57,20 @@ public class Part
 		} 
 		
 		// Adding attributes to the part.
-		if (attributes == null)
-		{
-			// Creating a new HashMap if the input is null.
-			this.attributes = new HashMap<AttributeType, Attribute>();
-		}
-		else
+		this.attributes = new HashMap<AttributeType, Attribute>();
+		
+		if (attributes != null)
 		{
 			// Validating all the attributes.
 			attributes.values().stream().forEach(t -> t.validate());
 			
 			// Setting the attributes.
-			this.attributes = attributes;
+			for ( Entry<AttributeType, Attribute>  entry : attributes.entrySet())
+			{
+				this.attributes.put(entry.getKey(), new Attribute(entry.getValue().getType(), 
+																  entry.getValue().getDirection(),
+																  entry.getValue().getValue()));	
+			}
 		}
 
 		this.refLinkOid = refLinkOid;
