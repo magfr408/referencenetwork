@@ -197,5 +197,27 @@ public class Attribute
 		this.direction = direction;
 		
 	}
+	
+	@Override
+	public String toString()
+	{
+		StringBuilder strBld = new StringBuilder();
+		
+		strBld.append("[");
+		strBld.append(this.type.name() + ", ");
+		strBld.append(this.direction.name() + ", ");
+		if (this.value != null)
+		{
+			strBld.append(String.valueOf(this.value.toString()));
+		}
+		else
+		{
+			strBld.append("NULL");
+		}
+		strBld.append("]");
+		
+		
+		return strBld.toString();
+	}
 
 }	
