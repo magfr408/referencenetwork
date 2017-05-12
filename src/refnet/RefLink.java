@@ -188,13 +188,15 @@ public class RefLink {
 	 *         to RefNetworks list of nodes.
 	 */
 	public HashSet<RefNode> addAttributeByGeom(AttributePart attribute, GeometryFactory gf, NameGenerator nmg,
-			double tolerance, boolean allowSlack, Logger logger) {
+											   double tolerance, boolean allowSlack, Logger logger) 
+	{
 
 		HashSet<RefNode> newNodes = new HashSet<RefNode>();
 
 		ListIterator<RefLinkPart> iterator = this.refLinkParts.listIterator();
 
-		while (iterator.hasNext()) {
+		while (iterator.hasNext()) 
+		{
 
 			RefLinkPart rlp = iterator.next();
 
@@ -210,7 +212,8 @@ public class RefLink {
 				rlpStartAndEndEqualsAttrStartAndEnd = true;
 			}
 
-			if ((rlp.geomIsWithin(attribute, gf)) || rlpStartAndEndEqualsAttrStartAndEnd) {
+			if ((rlp.geomIsWithin(attribute, gf)) || rlpStartAndEndEqualsAttrStartAndEnd) 
+			{
 				// Trivial case, just add the property.
 				rlp.addAttribute(attribute);
 				// set() replaces the last object returned by next()
