@@ -171,7 +171,7 @@ public class RefNetwork {
 	 * method assumes that each entry in attributes have been added to the list
 	 * through util.Consolidate.
 	 */
-	public void addAttribute(ArrayList<AttributePart> attributes, String refLinkOid) 
+	public void addAttribute(ArrayList<AttributePart> attributes) 
 	{
 		if ((!(attributes.isEmpty())) && (this.refLinks.containsKey(attributes.get(0).getOid()))) 
 		{
@@ -403,7 +403,7 @@ public class RefNetwork {
 								attributeNoGeom = null;
 								hasAttributeNoGeom = false;
 							}
-							this.addAttribute(attributePartList, currOid);
+							this.addAttribute(attributePartList);
 							attributePartList.clear();
 							attributePartList.add(attributePart);
 						}
@@ -446,7 +446,7 @@ public class RefNetwork {
 			attributeNoGeom = null;
 			hasAttributeNoGeom = false;
 		}
-		this.addAttribute(attributePartList, currOid);
+		this.addAttribute(attributePartList);
 		attributePartList.clear();
 		attributePartList.add(attributePart);
 	}
