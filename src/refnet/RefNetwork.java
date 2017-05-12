@@ -356,7 +356,7 @@ public class RefNetwork {
 										// TODO: Special case for UnCategorized?
 										if(entry.getValue().getValue().equals(otherAttribute.attributes.get(entry.getKey()).getValue()))
 										{
-											entry.getValue().setDirection(DirectionCategories.WITH_AND_AGAINST);
+											otherAttribute.attributes.get(entry.getKey()).setDirection(DirectionCategories.WITH_AND_AGAINST);
 										}
 										else
 										{
