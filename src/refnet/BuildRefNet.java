@@ -239,7 +239,7 @@ public class BuildRefNet {
 					throw new UnsupportedOperationException(attributeType.name() + " is not yet implemented.");
 			}
 
-			
+			System.out.println("Adding " + attributeType.name() + " to the network.");
 			this.refNet.addAttribute(res, attributeType);
 			
 		} 
@@ -305,7 +305,8 @@ public class BuildRefNet {
 		AttributeType[] attributes = new AttributeType[] { AttributeType.FUNCTIONAL_ROADCLASS, 
 														   AttributeType.NUMBER_OF_LANES, 
 														   AttributeType.FORBIDDEN_DRIVER_DIRECTION, 
-														   AttributeType.SPEED_LIMIT};
+														   AttributeType.SPEED_LIMIT
+														   };
 
 		String[] regions = {"E"};
 		int today = 20160603;
