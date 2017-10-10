@@ -235,6 +235,26 @@ public class BuildRefNet {
 					res = this.dbr.getSpeedLimitKmPHWithDirectionAll(today, region);
 					break;
 					
+				case ROAD_WIDTH:
+					res = this.dbr.getRoadWidthDirectionAll(today, region);
+					break;
+					
+				case LIVING_STREET:
+					res = this.dbr.getLivingStreetDirectionAll(today, region);
+					break;
+					
+				case GUARD_RAIL:
+					res = this.dbr.getGuardRailDirectionAll(today, region);
+					break;
+
+				case ROUNDABOUT:
+					res = this.dbr.getRoundaboutDirectionAll(today, region);
+					break;
+					
+				case URBAN_AREA:
+					res = this.dbr.getUrbanAreaDirectionAll(today, region);
+					break;
+					
 				default:
 					throw new UnsupportedOperationException(attributeType.name() + " is not yet implemented.");
 			}
@@ -302,11 +322,15 @@ public class BuildRefNet {
 
 	public static void main(String[] args) {
 
-		AttributeType[] attributes = new AttributeType[] { AttributeType.FUNCTIONAL_ROADCLASS, 
+		AttributeType[] attributes = new AttributeType[] { AttributeType.SPEED_LIMIT,
 														   AttributeType.NUMBER_OF_LANES, 
-														   AttributeType.FORBIDDEN_DRIVER_DIRECTION, 
-														   AttributeType.SPEED_LIMIT
-														   };
+														   AttributeType.ROAD_WIDTH,
+														   AttributeType.LIVING_STREET,
+														   AttributeType.GUARD_RAIL,
+														   AttributeType.ROUNDABOUT,
+														   AttributeType.URBAN_AREA,
+														   AttributeType.FUNCTIONAL_ROADCLASS, 
+														   AttributeType.FORBIDDEN_DRIVER_DIRECTION};
 
 		String[] regions = {"E"};
 		int today = 20160603;
