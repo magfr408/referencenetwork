@@ -1,4 +1,5 @@
 package refnet;
+
 /**
  * This Class contains a specific Attribute of the NVDB network.
  * 
@@ -17,9 +18,10 @@ public class Attribute
 	{
 		BRIDGE_AND_TUNNEL,
 		FUNCTIONAL_ROADCLASS,
+		GUARD_RAIL,
 		LIMITED_VEHICLE_LENGTH,
 		LIMITED_VEHICLE_WIDTH,
-//		LIVING_STREET, TODO: Add this?
+		LIVING_STREET,
 		MOTORWAY,
 		MOTORWAY_WITHOUT_A_CENTRAL_RESERVATION,
 		NUMBER_OF_LANES,
@@ -185,6 +187,63 @@ public class Attribute
 				
 				break;
 				
+			case ROAD_WIDTH:
+				
+				// Checking for integer.
+				if (!(this.value instanceof Double)) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 + " must have a value of type " + Double.class.getName());
+				}
+				
+				// Checking for valid values.
+				if (((Double)this.value).doubleValue() < 1.0 || ((Double)this.value).doubleValue() > 40.0) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 								 + " must be between 1.0 and 40.0 meters.");
+				}
+				break;
+				
+			case LIVING_STREET:
+				
+				// Checking for boolean.
+				if (!(this.value instanceof Boolean)) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 + " must have a value of type " + Boolean.class.getName());
+				}
+				break;
+				
+			case GUARD_RAIL:
+				
+				// Checking for boolean.
+				if (!(this.value instanceof Boolean)) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 + " must have a value of type " + Boolean.class.getName());
+				}
+				break;
+				
+			case ROUNDABOUT:
+				
+				// Checking for boolean.
+				if (!(this.value instanceof Boolean)) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 + " must have a value of type " + Boolean.class.getName());
+				}
+				break;
+				
+			case URBAN_AREA:
+				
+				// Checking for boolean.
+				if (!(this.value instanceof Boolean)) 
+				{
+					throw new IllegalArgumentException("Attribute of type " + this.type.name() 
+					 + " must have a value of type " + Boolean.class.getName());
+				}
+				break;
+
 			default:
 				throw new UnsupportedOperationException(this.type + " is not supported in the validation yet.");
 				
