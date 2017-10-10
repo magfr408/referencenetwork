@@ -303,6 +303,7 @@ public class RefNetwork {
 						value = attr.getShort("value");
 						break;
 						
+					case "double precision":
 					case "numeric":
 						value = attr.getDouble("value");
 						break;
