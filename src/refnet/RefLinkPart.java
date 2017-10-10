@@ -127,7 +127,14 @@ public class RefLinkPart extends Part {
 				Attribute attribute = this.getAttribute(usedAttributes[i]);
 				if (attribute != null)
 				{
-					strBuilder.append(String.valueOf(attribute.getValue()));
+					if (attribute.getType() == AttributeType.FORBIDDEN_DRIVER_DIRECTION)
+					{
+						strBuilder.append(String.valueOf(attribute.getDirection()));
+					}
+					else
+					{
+						strBuilder.append(String.valueOf(attribute.getValue()));
+					}
 				}
 				
 				if (i < usedAttributes.length -1)
