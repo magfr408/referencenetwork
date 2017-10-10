@@ -6,7 +6,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 /**
  * Simple SQL database reader class with prepared statements for retrieving data
@@ -32,6 +31,124 @@ public class SQLDatabaseReader {
 	private PreparedStatement psNetwork;
 	private PreparedStatement psNetworkSodraLanken;
 	private PreparedStatement psNetworkByWKTPoly;
+	
+	private PreparedStatement psRoadWidth;
+	private PreparedStatement psLivingStreet;
+	private PreparedStatement psGuardRail;
+	private PreparedStatement psRoundabout;
+	private PreparedStatement psUrbanArea;
+	
+	
+	private static final String queryRoadWidth =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "\"BREDD\"::double precision AS value, "
+		  + "pg_typeOf(\"BREDD\"::double precision) AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.road_width "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+
+	private static final String queryLivingStreet =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		+ "\"STARTAVST\" AS MEASURE_FROM, "
+		+ "\"SLUTAVST\" AS MEASURE_TO, "
+		+ "true::boolean AS value, "
+		+ "pg_typeOf(true) AS valueType, "
+		+ "CASE WHEN \"SIDA\" = 'Höger' THEN 'WITH' "
+			+ "	  WHEN \"SIDA\" = 'Vänster' THEN 'AGAINST' "
+			+ "	  ELSE 'WITH_AND_AGAINST' "
+		+ "END AS direction, "
+		+ "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		+ "FROM nvdb.living_street "
+		+ "WHERE \"RLID\" IN ( "
+			+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		+ "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		+ "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
+	
+	private static final String queryGuardRail =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "true::boolean AS value, "
+		  + "pg_typeOf(true) AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.guard_rail "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		  + "AND \"SIDA\" = 'Vänster' "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
+	
+	private static final String queryRoundabout =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "true::boolean AS value, "
+		  + "pg_typeOf(true) AS valueType, "
+		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 'WITH' "
+		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 'AGAINST' "
+		  + "	  ELSE 'WITH_AND_AGAINST' "
+		  + "END AS direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.roundabout "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
+	
+	private static final String queryUrbanArea =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "true::boolean AS value, "
+		  + "pg_typeOf(true) AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.urban_area "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
 	
 	private static final String queryFunctionalRoadClass = 
 			"SELECT \"RLID\" AS REFLINK_OID, "
@@ -333,6 +450,18 @@ public class SQLDatabaseReader {
 			this.psNetworkSodraLanken = this.conn.prepareStatement(queryNetworkSodraLanken);
 			// setup prepared statements, this selects by polygon instead of county code
 			this.psNetworkByWKTPoly = this.conn.prepareStatement(queryNetworkByWKTPoly);
+			
+			
+			this.psRoadWidth = this.conn.prepareStatement(queryRoadWidth);
+			this.psRoadWidth.setFetchSize(10000);
+			this.psLivingStreet = this.conn.prepareStatement(queryLivingStreet);
+			this.psLivingStreet.setFetchSize(10000);
+			this.psGuardRail = this.conn.prepareStatement(queryGuardRail);
+			this.psGuardRail.setFetchSize(10000);
+			this.psRoundabout = this.conn.prepareStatement(queryRoundabout);
+			this.psRoundabout.setFetchSize(10000);
+			this.psUrbanArea = this.conn.prepareStatement(queryUrbanArea);
+			this.psUrbanArea.setFetchSize(10000);
 		}
 		catch (SQLException e) 
 		{
@@ -758,12 +887,6 @@ public class SQLDatabaseReader {
 
 		return this.psSpeedByWKTLong.executeQuery();
 	}
-	
-	public ResultSet read(String query) throws SQLException {
-		Statement state = conn.createStatement();
-		ResultSet result = state.executeQuery(query);
-		return result;
-	}
 
 	/**
 	 * Closes all prepared statements and connection.
@@ -817,23 +940,94 @@ public class SQLDatabaseReader {
 			/* ignored */ }
 	}
 
-	public static void main(String[] args) {
-		// Example usage for select statement
-
-		SQLDatabaseReader sqldbr = new SQLDatabaseReader("PCSTH11541", 5432, "netdb", "gruck", "gruck", 1);
-
-		try {
-			//
-			ResultSet result = sqldbr.read("select top 100 * from netdb.road.NET_RefLinkPart");
-			while (result.next()) {
-				System.out.println(result.getString("GID") + "\t" + result.getString("REFLINK_OID"));
-			}
-			result.close();
-			sqldbr.closeConnection();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			sqldbr.closeConnection();
+	public ResultSet getRoadWidthDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
 		}
+		
+		this.psRoadWidth.clearParameters();
+
+		this.psRoadWidth.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psRoadWidth.setArray(2, regions);
+		this.psRoadWidth.setInt(3, today);
+
+		return this.psRoadWidth.executeQuery();
+	}
+	
+	public ResultSet getLivingStreetDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
+		this.psLivingStreet.clearParameters();
+
+		this.psLivingStreet.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psLivingStreet.setArray(2, regions);
+		this.psLivingStreet.setInt(3, today);
+
+		return this.psLivingStreet.executeQuery();
+	}
+	
+	public ResultSet getGuardRailDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
+		this.psGuardRail.clearParameters();
+
+		this.psGuardRail.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psGuardRail.setArray(2, regions);
+		this.psGuardRail.setInt(3, today);
+
+		return this.psGuardRail.executeQuery();
+	}
+	
+	
+	public ResultSet getRoundaboutDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
+		this.psRoundabout.clearParameters();
+
+		this.psRoundabout.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psRoundabout.setArray(2, regions);
+		this.psRoundabout.setInt(3, today);
+
+		return this.psRoundabout.executeQuery();
+	}
+	
+	public ResultSet getUrbanAreaDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
+		this.psUrbanArea.clearParameters();
+
+		this.psUrbanArea.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psUrbanArea.setArray(2, regions);
+		this.psUrbanArea.setInt(3, today);
+
+		return this.psUrbanArea.executeQuery();
 	}
 }
