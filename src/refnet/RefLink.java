@@ -11,6 +11,7 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 
 import io.Logger;
+import refnet.Attribute.AttributeType;
 import util.NameGenerator;
 import util.Consolidator;
 import util.GeometryOps;
@@ -186,14 +187,16 @@ public class RefLink {
 	 * @return HashSet<RefNode> new nodes generated with <b>nmg</b> to be added
 	 *         to RefNetworks list of nodes.
 	 */
-	public HashSet<RefNode> addAttributeByGeom(Attribute attribute, GeometryFactory gf, NameGenerator nmg,
-			double tolerance, boolean allowSlack, Logger logger) {
+	public HashSet<RefNode> addAttributeByGeom(AttributePart attribute, GeometryFactory gf, NameGenerator nmg,
+											   double tolerance, boolean allowSlack, Logger logger) 
+	{
 
 		HashSet<RefNode> newNodes = new HashSet<RefNode>();
 
 		ListIterator<RefLinkPart> iterator = this.refLinkParts.listIterator();
 
-		while (iterator.hasNext()) {
+		while (iterator.hasNext()) 
+		{
 
 			RefLinkPart rlp = iterator.next();
 
@@ -209,7 +212,8 @@ public class RefLink {
 				rlpStartAndEndEqualsAttrStartAndEnd = true;
 			}
 
-			if ((rlp.geomIsWithin(attribute, gf)) || rlpStartAndEndEqualsAttrStartAndEnd) {
+			if ((rlp.geomIsWithin(attribute, gf)) || rlpStartAndEndEqualsAttrStartAndEnd) 
+			{
 				// Trivial case, just add the property.
 				rlp.addAttribute(attribute);
 				// set() replaces the last object returned by next()
@@ -226,17 +230,16 @@ public class RefLink {
 
 				LineString[] L = GeometryOps.splitBy(rlp.getGeometry(), P, gf, tolerance, allowSlack);
 
-				if (L != null) {
+				if (L != null) 
+				{
+					// TODO: Check if rlp.getAttributeMap() is the correct substitute.
 					RefLinkPart rlpMiddle = new RefLinkPart(rlp.getOid(), L[1], attribute.getMeasureFrom(),
-							attribute.getMeasureTo(), n1.getOid(), n2.getOid(), rlp.getVelocity(),
-							rlp.getVelocityDirection(), rlp.getNumberOfLanes(), rlp.getFunctionalRoadClass(),
-							rlp.getUnallowedDriverDir());
+							attribute.getMeasureTo(), n1.getOid(), n2.getOid(), rlp.getAttributeMap());
 					rlpMiddle.addAttribute(attribute);
 
+					// TODO: Check if rlp.getAttributeMap() is the correct substitute.
 					RefLinkPart rlpLast = new RefLinkPart(rlp.getOid(), L[2], attribute.getMeasureTo(),
-							rlp.getMeasureTo(), n2.getOid(), rlp.getNodeTo(), rlp.getVelocity(),
-							rlp.getVelocityDirection(), rlp.getNumberOfLanes(), rlp.getFunctionalRoadClass(),
-							rlp.getUnallowedDriverDir());
+							rlp.getMeasureTo(), n2.getOid(), rlp.getNodeTo(), rlp.getAttributeMap());
 
 					rlp.setGeometry(L[0]);
 					rlp.setMeasureTo(attribute.getMeasureFrom());
@@ -259,7 +262,7 @@ public class RefLink {
 							new String[] {
 									"RefLink: (Case1) Failed to add attribute: "
 											+ attribute.toCSVStringWithoutAttributes() + " ...",
-									" 	... on RefLinkPart " + rlp.toCSVString(false) });
+									" 	... on RefLinkPart " + rlp.toCSVString(false, null) });
 				}
 			} else if (rlp.geomEndsWithin(attribute, gf) && !(rlpEndEqualsAttrStart)) {
 				// split in 2.
@@ -270,11 +273,11 @@ public class RefLink {
 
 				LineString[] L = GeometryOps.splitBy(rlp.getGeometry(), P, gf, tolerance, allowSlack);
 
-				if (L != null) {
+				if (L != null) 
+				{
+					// TODO: Check if rlp.getAttributeMap() is the correct substitute.
 					RefLinkPart rlpLast = new RefLinkPart(rlp.getOid(), L[1], attribute.getMeasureFrom(),
-							rlp.getMeasureTo(), n1.getOid(), rlp.getNodeTo(), rlp.getVelocity(),
-							rlp.getVelocityDirection(), rlp.getNumberOfLanes(), rlp.getFunctionalRoadClass(),
-							rlp.getUnallowedDriverDir());
+							rlp.getMeasureTo(), n1.getOid(), rlp.getNodeTo(), rlp.getAttributeMap());
 					rlpLast.addAttribute(attribute);
 
 					rlp.setGeometry(L[0]);
@@ -293,7 +296,7 @@ public class RefLink {
 							new String[] {
 									"RefLink: (Case3) Failed to add attribute: "
 											+ attribute.toCSVStringWithoutAttributes() + " ...",
-									" 	... on RefLinkPart " + rlp.toCSVString(false) });
+									" 	... on RefLinkPart " + rlp.toCSVString(false, null) });
 
 				}
 			} else if (attribute.geomEndsWithin(rlp, gf) && !(rlpStartEqualsAttrEnd)) {
@@ -311,11 +314,11 @@ public class RefLink {
 
 				LineString[] L = GeometryOps.splitBy(rlp.getGeometry(), P, gf, tolerance, allowSlack);
 
-				if (L != null) {
+				if (L != null) 
+				{
+					// TODO: Check if rlp.getAttributeMap() is the correct substitute.
 					RefLinkPart rlpFirst = new RefLinkPart(rlp.getOid(), L[0], rlp.getMeasureFrom(),
-							attribute.getMeasureTo(), rlp.getNodeFrom(), n2.getOid(), rlp.getVelocity(),
-							rlp.getVelocityDirection(), rlp.getNumberOfLanes(), rlp.getFunctionalRoadClass(),
-							rlp.getUnallowedDriverDir());
+							attribute.getMeasureTo(), rlp.getNodeFrom(), n2.getOid(), rlp.getAttributeMap());
 					rlpFirst.addAttribute(attribute);
 
 					rlp.setGeometry(L[1]);
@@ -334,7 +337,7 @@ public class RefLink {
 							new String[] {
 									"RefLink: (Case2) Failed to add attribute: "
 											+ attribute.toCSVStringWithoutAttributes() + " ...",
-									" 	... on RefLinkPart " + rlp.toCSVString(false) });
+									" 	... on RefLinkPart " + rlp.toCSVString(false, null) });
 				}
 			}
 		}
@@ -351,10 +354,14 @@ public class RefLink {
 	/**
 	 * Get the one <b>RefLinkPart</b> as a ;-separated String without new line.
 	 */
-	public String refLinkPartAsCSVString(int idx, boolean withAttributes) {
-		if (idx < this.refLinkParts.size()) {
-			return this.refLinkParts.get(idx).toCSVString(withAttributes);
-		} else {
+	public String refLinkPartAsCSVString(int idx, boolean withAttributes, AttributeType[] usedAttributes) 
+	{
+		if (idx < this.refLinkParts.size()) 
+		{
+			return this.refLinkParts.get(idx).toCSVString(withAttributes, usedAttributes);
+		} 
+		else 
+		{
 			return null;
 		}
 	}
@@ -363,13 +370,14 @@ public class RefLink {
 	 * Get the whole list of <b>RefLinkPart</b>s as a String with new line
 	 * (System.lineSeparator).
 	 */
-	public String getRefLinkPartsAsCSVStringWithNewRow(boolean withAttributes) {
+	public String getRefLinkPartsAsCSVStringWithNewRow(boolean withAttributes, AttributeType[] usedAttributes) 
+	{
 		String str = "";
 
 		int idx = 0;
 
 		while (this.refLinkParts.size() > idx) {
-			str = str + this.refLinkParts.get(idx).toCSVString(withAttributes);
+			str = str + this.refLinkParts.get(idx).toCSVString(withAttributes, usedAttributes);
 
 			if (idx < (this.refLinkParts.size() - 1)) {
 				str = str + System.lineSeparator();

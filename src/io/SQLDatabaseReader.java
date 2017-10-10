@@ -6,7 +6,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 /**
  * Simple SQL database reader class with prepared statements for retrieving data
@@ -18,6 +17,8 @@ import java.sql.Statement;
 public class SQLDatabaseReader {
 	private String connectionURL;
 	private Connection conn;
+	private String user;
+	private String password;
 	private PreparedStatement psFunctionalRoadClass;
 	private PreparedStatement psFunctionalRoadClassLong;
 	private PreparedStatement psLanesLong;
@@ -31,11 +32,131 @@ public class SQLDatabaseReader {
 	private PreparedStatement psNetworkSodraLanken;
 	private PreparedStatement psNetworkByWKTPoly;
 	
+	private PreparedStatement psRoadWidth;
+	private PreparedStatement psLivingStreet;
+	private PreparedStatement psGuardRail;
+	private PreparedStatement psRoundabout;
+	private PreparedStatement psUrbanArea;
+	
+	
+	private static final String queryRoadWidth =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "\"BREDD\"::double precision AS value, "
+		  + "pg_typeOf(\"BREDD\"::double precision) AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.road_width "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+
+	private static final String queryLivingStreet =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		+ "\"STARTAVST\" AS MEASURE_FROM, "
+		+ "\"SLUTAVST\" AS MEASURE_TO, "
+		+ "true::boolean AS value, "
+		+ "pg_typeOf(true) AS valueType, "
+		+ "CASE WHEN \"SIDA\" = 'HÃ¶ger' THEN 'WITH' "
+			+ "	  WHEN \"SIDA\" = 'VÃ¤nster' THEN 'AGAINST' "
+			+ "	  ELSE 'WITH_AND_AGAINST' "
+		+ "END AS direction, "
+		+ "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		+ "FROM nvdb.living_street "
+		+ "WHERE \"RLID\" IN ( "
+			+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		+ "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		+ "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
+	
+	private static final String queryGuardRail =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "true::boolean AS value, "
+		  + "pg_typeOf(true) AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.guard_rail "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		  + "AND \"SIDA\" = 'VÃ¤nster' "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
+	
+	private static final String queryRoundabout =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "true::boolean AS value, "
+		  + "pg_typeOf(true) AS valueType, "
+		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 'WITH' "
+		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 'AGAINST' "
+		  + "	  ELSE 'WITH_AND_AGAINST' "
+		  + "END AS direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.roundabout "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
+	
+	private static final String queryUrbanArea =
+			"SELECT \"RLID\" AS REFLINK_OID, "
+		  + "\"STARTAVST\" AS MEASURE_FROM, "
+		  + "\"SLUTAVST\" AS MEASURE_TO, "
+		  + "true::boolean AS value, "
+		  + "pg_typeOf(true) AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
+		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
+		  + "FROM nvdb.urban_area "
+		  + "WHERE \"RLID\" IN ( "
+		  	+ "SELECT \"REFLINK_OI\" AS REFLINK_OID "
+		  	+ "FROM nvdb.ref_link_part "
+		  	+ "WHERE ? between \"FROM_DATE\" AND \"TO_DATE\" "
+		  	+ "AND county_id IN( "
+		  	+ "(SELECT value "
+		  		+ "FROM unnest(?::character varying[]) AS county_id(value))) "
+		  		+ "GROUP BY REFLINK_OID ) "
+		  + "AND ? between \"FRAN_DATUM\" AND \"TILL_DATUM\" "
+		  + "ORDER BY REFLINK_OID ASC, MEASURE_FROM ASC";
+	
+	
 	private static final String queryFunctionalRoadClass = 
 			"SELECT \"RLID\" AS REFLINK_OID, "
 		  + "\"STARTAVST\" AS MEASURE_FROM, "
 		  + "\"SLUTAVST\" AS MEASURE_TO, "
-		  + "\"KLASS\"::integer AS functional_road_class, "
+		  + "\"KLASS\"::integer AS value, "
+		  + "pg_typeOf(\"KLASS\"::integer) AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
 		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
 		  + "FROM nvdb.functional_road_class "
 		  + "WHERE \"RLID\" IN (?) "
@@ -46,7 +167,9 @@ public class SQLDatabaseReader {
 			"SELECT \"RLID\" AS REFLINK_OID, "
 		  + "\"STARTAVST\" AS MEASURE_FROM, "
 		  + "\"SLUTAVST\" AS MEASURE_TO, "
-		  + "\"KLASS\"::integer AS functional_road_class, "
+		  + "\"KLASS\"::integer AS value, "
+		  + "pg_typeOf(\"KLASS\"::integer) AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
 		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
 		  + "FROM nvdb.functional_road_class "
 		  + "WHERE \"RLID\" IN ( "
@@ -64,7 +187,9 @@ public class SQLDatabaseReader {
 			"SELECT \"RLID\" AS REFLINK_OID, "
 		  + "\"STARTAVST\" AS MEASURE_FROM, "
 		  + "\"SLUTAVST\" AS MEASURE_TO, "
-		  + "\"KOEFAETSAL\" as lanes, "
+		  + "\"KOEFAETSAL\" as value, "
+		  + "pg_typeOf(\"KOEFAETSAL\") AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
 		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
 		  + "FROM nvdb.number_of_lanes "
 		  + "WHERE \"RLID\" IN ( "
@@ -82,10 +207,12 @@ public class SQLDatabaseReader {
 			"SELECT \"RLID\" AS REFLINK_OID, "
 		  + "\"STARTAVST\" AS MEASURE_FROM, "
 		  + "\"SLUTAVST\" AS MEASURE_TO, "
-		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 1 "
-		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 2 "
-		  + "	  ELSE 3"
-		  + "END AS forbidden_direction, "
+		  + "true::boolean AS value, "
+		  + "pg_typeOf(true) AS valueType, "
+		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 'WITH' "
+		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 'AGAINST' "
+		  + "	  ELSE 'WITH_AND_AGAINST' "
+		  + "END AS direction, "
 		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
 		  + "FROM nvdb.prohibited_direction_of_travel "
 		  + "WHERE \"RLID\" IN ( "
@@ -103,11 +230,12 @@ public class SQLDatabaseReader {
 			"SELECT \"RLID\" AS REFLINK_OID, "
 		  + "\"STARTAVST\" AS MEASURE_FROM, "
 		  + "\"SLUTAVST\" AS MEASURE_TO, "
-		  + "\"HTHAST\"::double precision AS speed, "
-		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 1 "
-		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 2 "
-		  + "	  ELSE 3"
-		  + "END AS speed_direction, "
+		  + "\"HTHAST\"::double precision AS value, "
+		  + "pg_typeOf(\"HTHAST\"::double precision) AS valueType, "
+		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 'WITH' "
+		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 'AGAINST' "
+		  + "	  ELSE 'WITH_AND_AGAINST' "
+		  + "END AS direction, "
 		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
 		  + "FROM nvdb.speed_limit "
 		  + "WHERE \"RLID\" IN ( "
@@ -137,7 +265,7 @@ public class SQLDatabaseReader {
           	+ "(SELECT value "
             + "FROM unnest(?::character varying[]) AS county_id(value))) "
 		  + "AND ? between \"FROM_DATE\" AND \"TO_DATE\""
-		  + "AND \"NÄTTYP\" = 1;";
+		  + "AND \"NÃ„TTYP\" = 1;";
 	
 	private static final String queryNetworkSodraLanken = 
 			"SELECT \"REFLINK_OI\" AS REFLINK_OID, "
@@ -167,13 +295,15 @@ public class SQLDatabaseReader {
 		  + "WHERE "
 		  + "ST_WithIn(links.GEOM, ST_GeomFromText (?, ?)) "
 		  + "AND ? between \"FROM_DATE\" AND \"TO_DATE\""
-		  + "AND \"NÄTTYP\" = 1;";
+		  + "AND \"NÃ„TTYP\" = 1;";
 	
 	private static final String queryFunctionalRoadClassByWKTLong = 
 			"SELECT \"RLID\" AS REFLINK_OID, "
 		  + "\"STARTAVST\" AS MEASURE_FROM, "
 		  + "\"SLUTAVST\" AS MEASURE_TO, "
-		  + "\"KLASS\"::integer AS functional_road_class, "
+		  + "\"KLASS\"::integer AS value, "
+		  + "pg_typeOf(\"KLASS\"::integer) AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
 		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
 		  + "FROM nvdb.functional_road_class "
 		  + "WHERE \"RLID\" IN ( "
@@ -190,7 +320,9 @@ public class SQLDatabaseReader {
 			"SELECT \"RLID\" AS REFLINK_OID, "
 		  + "\"STARTAVST\" AS MEASURE_FROM, "
 		  + "\"SLUTAVST\" AS MEASURE_TO, "
-		  + "\"KOEFAETSAL\" as lanes, "
+		  + "\"KOEFAETSAL\" as value, "
+		  + "pg_typeOf(\"KOEFAETSAL\") AS valueType, "
+		  + "'NOT_SPECIFIED'::character varying AS direction, "
 		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
 		  + "FROM nvdb.number_of_lanes "
 		  + "WHERE \"RLID\" IN ( "
@@ -207,10 +339,12 @@ public class SQLDatabaseReader {
 			"SELECT \"RLID\" AS REFLINK_OID, "
 		  + "\"STARTAVST\" AS MEASURE_FROM, "
 		  + "\"SLUTAVST\" AS MEASURE_TO, "
-		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 1 "
-		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 2 "
-		  + "	  ELSE 3"
-		  + "END AS forbidden_direction, "
+		  + "true::boolean AS value, "
+		  + "pg_typeOf(true) AS valueType, "
+		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 'WITH' "
+		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 'AGAINST' "
+		  + "	  ELSE 'WITH_AND_AGAINST'"
+		  + "END AS direction, "
 		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
 		  + "FROM nvdb.prohibited_direction_of_travel "
 		  + "WHERE \"RLID\" IN ( "
@@ -227,11 +361,12 @@ public class SQLDatabaseReader {
 			"SELECT \"RLID\" AS REFLINK_OID, "
 		  + "\"STARTAVST\" AS MEASURE_FROM, "
 		  + "\"SLUTAVST\" AS MEASURE_TO, "
-		  + "\"HTHAST\"::double precision AS speed, "
-		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 1 "
-		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 2 "
-		  + "	  ELSE 3"
-		  + "END AS speed_direction, "
+		  + "\"HTHAST\"::double precision AS value, "
+		  + "pg_typeOf(\"HTHAST\"::double precision) AS valueType, "
+		  + "CASE WHEN \"RIKTNING\" = 'Med' THEN 'WITH' "
+		  + "	  WHEN \"RIKTNING\" = 'Mot' THEN 'AGAINST' "
+		  + "	  ELSE 'WITH_AND_AGAINST' "
+		  + "END AS direction, "
 		  + "ST_AsText(ST_LineMerge (ST_Force2D(geom))) AS GEOM "
 		  + "FROM nvdb.speed_limit "
 		  + "WHERE \"RLID\" IN ( "
@@ -269,26 +404,14 @@ public class SQLDatabaseReader {
 				// make connection to database
 				this.connectionURL = "jdbc:postgresql://" + host + ":" 
 									+ port + "/" + name;
-				this.conn = DriverManager.getConnection(connectionURL, user, password);
+				this.user = user;
+				this.password = password;
+				
+				setUpConnection();
 
-				// setup prepared statements.
-				this.psFunctionalRoadClass = this.conn.prepareStatement(queryFunctionalRoadClass);
-				this.psFunctionalRoadClassLong = this.conn.prepareStatement(quryFunctionalRoadClassLong);
-				this.psLanesLong = this.conn.prepareStatement(queryLanesLong);
-				this.psForbiddenDriveDirLong = this.conn.prepareStatement(queryForbiddenDriveDirLong);
-				this.psSpeedLong = this.conn.prepareStatement(querySpeedLimLong);
-				// setup prepared statements as above, but these select by polygon instead of county code
-				this.psFunctionalRoadClassByWKTLong = this.conn.prepareStatement(queryFunctionalRoadClassByWKTLong);
-				this.psLanesByWKTLong = this.conn.prepareStatement(queryLanesByWKTLong);
-				this.psForbiddenDriveDirByWKTLong = this.conn.prepareStatement(queryForbiddenDriveDirByWKTLong);
-				this.psSpeedByWKTLong = this.conn.prepareStatement(querySpeedLimByWKTLong);
-				// setup prepared statements
-				this.psNetwork = this.conn.prepareStatement(queryNetwork);
-				this.psNetworkSodraLanken = this.conn.prepareStatement(queryNetworkSodraLanken);
-				// setup prepared statements, this selects by polygon instead of county code
-				this.psNetworkByWKTPoly = this.conn.prepareStatement(queryNetworkByWKTPoly);
-
-			} else {
+			} 
+			else 
+			{
 				this.connectionURL = null;
 				this.conn = null;
 				System.out.println("core.SQLDatabaseReader.java: no such connection case (conCase): " + conCase);
@@ -297,15 +420,60 @@ public class SQLDatabaseReader {
 			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
-		} catch (SQLException e) {
+		} 
+	}
+
+	private void setUpConnection() 
+	{
+		try
+		{
+			this.conn = DriverManager.getConnection(this.connectionURL, this.user, this.password);
+			conn.setAutoCommit(false);
+			
+			// setup prepared statements.
+			this.psFunctionalRoadClass = this.conn.prepareStatement(queryFunctionalRoadClass);
+			this.psFunctionalRoadClassLong = this.conn.prepareStatement(quryFunctionalRoadClassLong);
+			this.psFunctionalRoadClassLong.setFetchSize(10000);
+			this.psLanesLong = this.conn.prepareStatement(queryLanesLong);
+			this.psLanesLong.setFetchSize(10000);
+			this.psForbiddenDriveDirLong = this.conn.prepareStatement(queryForbiddenDriveDirLong);
+			this.psForbiddenDriveDirLong.setFetchSize(10000);
+			this.psSpeedLong = this.conn.prepareStatement(querySpeedLimLong);
+			this.psSpeedLong.setFetchSize(10000);
+			// setup prepared statements as above, but these select by polygon instead of county code
+			this.psFunctionalRoadClassByWKTLong = this.conn.prepareStatement(queryFunctionalRoadClassByWKTLong);
+			this.psLanesByWKTLong = this.conn.prepareStatement(queryLanesByWKTLong);
+			this.psForbiddenDriveDirByWKTLong = this.conn.prepareStatement(queryForbiddenDriveDirByWKTLong);
+			this.psSpeedByWKTLong = this.conn.prepareStatement(querySpeedLimByWKTLong);
+			// setup prepared statements
+			this.psNetwork = this.conn.prepareStatement(queryNetwork);
+			this.psNetworkSodraLanken = this.conn.prepareStatement(queryNetworkSodraLanken);
+			// setup prepared statements, this selects by polygon instead of county code
+			this.psNetworkByWKTPoly = this.conn.prepareStatement(queryNetworkByWKTPoly);
+			
+			
+			this.psRoadWidth = this.conn.prepareStatement(queryRoadWidth);
+			this.psRoadWidth.setFetchSize(10000);
+			this.psLivingStreet = this.conn.prepareStatement(queryLivingStreet);
+			this.psLivingStreet.setFetchSize(10000);
+			this.psGuardRail = this.conn.prepareStatement(queryGuardRail);
+			this.psGuardRail.setFetchSize(10000);
+			this.psRoundabout = this.conn.prepareStatement(queryRoundabout);
+			this.psRoundabout.setFetchSize(10000);
+			this.psUrbanArea = this.conn.prepareStatement(queryUrbanArea);
+			this.psUrbanArea.setFetchSize(10000);
+		}
+		catch (SQLException e) 
+		{
 			e.printStackTrace();
 			System.out.println(e.getLocalizedMessage());
 			System.out.println(e.getSQLState());
 		}
+		
 	}
 
 	/**
-	 * Passes values to prepared statement that reads reflinks for Södra Länken
+	 * Passes values to prepared statement that reads reflinks for Sï¿½dra Lï¿½nken
 	 * in Stockholm.
 	 * 
 	 * @return a <b>ResultSet</b> with columns REFLINK_OID (SQL-Varchar),
@@ -318,7 +486,12 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getNetworkSodraLanken() throws SQLException {
+	public ResultSet getNetworkSodraLanken() throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
 		this.psNetworkSodraLanken.clearParameters();
 
 		this.psNetworkSodraLanken.setInt(1, 20151117);
@@ -330,7 +503,7 @@ public class SQLDatabaseReader {
 
 	/**
 	 * Passes values to prepared statement that reads a road network for any
-	 * Swedish region (län).
+	 * Swedish region (lï¿½n).
 	 * 
 	 * @param today
 	 *            YYYYMMDD integer.
@@ -346,7 +519,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getNetworkByRegion(int today, String[] regionArray) throws SQLException {
+	public ResultSet getNetworkByRegion(int today, String[] regionArray) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psNetwork.clearParameters();
 
 		Array regions = this.conn.createArrayOf("varchar", regionArray);
@@ -375,7 +554,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query
 	 */
-	public ResultSet getNetworkByPolygon(int today, String polygonWKT, int SRID) throws SQLException {
+	public ResultSet getNetworkByPolygon(int today, String polygonWKT, int SRID) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psNetworkByWKTPoly.clearParameters();
 		
 		this.psNetworkByWKTPoly.setString(1, polygonWKT);
@@ -387,9 +572,9 @@ public class SQLDatabaseReader {
 	}
 
 	/**
-	 * Passes values to prepared statement that reads the attribute (företeelse)
-	 * functional_road_class (funktionell vägklass) for all reflinks in any
-	 * Swedish region (län).
+	 * Passes values to prepared statement that reads the attribute (fï¿½reteelse)
+	 * functional_road_class (funktionell vï¿½gklass) for all reflinks in any
+	 * Swedish region (lï¿½n).
 	 * 
 	 * @param today
 	 *            YYYYMMDD integer.
@@ -403,7 +588,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getClassificationAll(int today, String[] regionArray) throws SQLException {
+	public ResultSet getClassificationAll(int today, String[] regionArray) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psFunctionalRoadClassLong.clearParameters();
 
 		this.psFunctionalRoadClassLong.setInt(1, today);
@@ -418,8 +609,8 @@ public class SQLDatabaseReader {
 	}
 
 	/**
-	 * Passes values to prepared statement that reads the attribute (företeelse)
-	 * functional_road_class (funktionell vägklass) for all reflinks in any
+	 * Passes values to prepared statement that reads the attribute (fï¿½reteelse)
+	 * functional_road_class (funktionell vï¿½gklass) for all reflinks in any
 	 * polygon.
 	 * 
 	 * @param today
@@ -436,7 +627,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getClassificationAll(int today, String polygonWKT, int SRID) throws SQLException {
+	public ResultSet getClassificationAll(int today, String polygonWKT, int SRID) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psFunctionalRoadClassByWKTLong.clearParameters();
 
 		this.psFunctionalRoadClassByWKTLong.setString(1, polygonWKT);
@@ -449,8 +646,8 @@ public class SQLDatabaseReader {
 	}
 	
 	/**
-	 * Passes values to prepared statement that reads the attribute (företeelse)
-	 * functional_road_class (funktionell vägklass) for any REFLINK_OID.
+	 * Passes values to prepared statement that reads the attribute (fï¿½reteelse)
+	 * functional_road_class (funktionell vï¿½gklass) for any REFLINK_OID.
 	 * 
 	 * @param today
 	 *            YYYYMMDD integer.
@@ -464,7 +661,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getClassification(int today, String refLinkOid) throws SQLException {
+	public ResultSet getClassification(int today, String refLinkOid) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psFunctionalRoadClass.clearParameters();
 
 		this.psFunctionalRoadClass.setString(1, refLinkOid);
@@ -474,8 +677,8 @@ public class SQLDatabaseReader {
 	}
 
 	/**
-	 * Passes values to prepared statement that reads the attribute (företeelse)
-	 * number of lanes for all reflinks in any Swedish region (län).
+	 * Passes values to prepared statement that reads the attribute (fï¿½reteelse)
+	 * number of lanes for all reflinks in any Swedish region (lï¿½n).
 	 * 
 	 * @param today
 	 *            YYYYMMDD integer.
@@ -489,7 +692,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getLanesAll(int today, String[] regionArray) throws SQLException {
+	public ResultSet getLanesAll(int today, String[] regionArray) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psLanesLong.clearParameters();
 
 		this.psLanesLong.setInt(1, today);
@@ -502,7 +711,7 @@ public class SQLDatabaseReader {
 	}
 
 	/**
-	 * Passes values to prepared statement that reads the attribute (företeelse)
+	 * Passes values to prepared statement that reads the attribute (fï¿½reteelse)
 	 * number of lanes for all reflinks in any polygon.
 	 * 
 	 * @param today
@@ -519,7 +728,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getLanesAll(int today, String polygonWKT, int SRID) throws SQLException {
+	public ResultSet getLanesAll(int today, String polygonWKT, int SRID) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psLanesByWKTLong.clearParameters();
 
 		this.psLanesByWKTLong.setString(1, polygonWKT);
@@ -531,9 +746,9 @@ public class SQLDatabaseReader {
 	}
 	
 	/**
-	 * Passes values to prepared statement that reads the attribute (företeelse)
-	 * forbidden_direction (Förbjuden Färdriktning) for all reflinks in any
-	 * Swedish region (län).
+	 * Passes values to prepared statement that reads the attribute (fï¿½reteelse)
+	 * forbidden_direction (Fï¿½rbjuden Fï¿½rdriktning) for all reflinks in any
+	 * Swedish region (lï¿½n).
 	 * 
 	 * @param today
 	 *            YYYYMMDD integer.
@@ -547,7 +762,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getForbiddedTravelDirectionAll(int today, String[] regionArray) throws SQLException {
+	public ResultSet getForbiddedTravelDirectionAll(int today, String[] regionArray) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psForbiddenDriveDirLong.clearParameters();
 
 		this.psForbiddenDriveDirLong.setInt(1, today);
@@ -555,14 +776,14 @@ public class SQLDatabaseReader {
 		Array regions = this.conn.createArrayOf("varchar", regionArray);
 		this.psForbiddenDriveDirLong.setArray(2, regions);
 		this.psForbiddenDriveDirLong.setInt(3, today);
-		this.psForbiddenDriveDirLong.setInt(4, today);
+		//this.psForbiddenDriveDirLong.setInt(4, today);
 
 		return this.psForbiddenDriveDirLong.executeQuery();
 	}
 
 	/**
-	 * Passes values to prepared statement that reads the attribute (företeelse)
-	 * forbidden_direction (Förbjuden Färdriktning) for all reflinks in any
+	 * Passes values to prepared statement that reads the attribute (fï¿½reteelse)
+	 * forbidden_direction (Fï¿½rbjuden Fï¿½rdriktning) for all reflinks in any
 	 * polygon.
 	 * 
 	 * @param today
@@ -579,7 +800,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getForbiddedTravelDirectionAll(int today, String polygonWKT, int SRID) throws SQLException {
+	public ResultSet getForbiddedTravelDirectionAll(int today, String polygonWKT, int SRID) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psForbiddenDriveDirByWKTLong.clearParameters();
 
 		this.psForbiddenDriveDirByWKTLong.setString(1, polygonWKT);
@@ -591,9 +818,9 @@ public class SQLDatabaseReader {
 	}
 	
 	/**
-	 * Passes values to prepared statement that reads the attribute (företeelse)
-	 * speed (Högsta tillåtna hastighet) for all reflinks in any Swedish region
-	 * (län).
+	 * Passes values to prepared statement that reads the attribute (fï¿½reteelse)
+	 * speed (Hï¿½gsta tillï¿½tna hastighet) for all reflinks in any Swedish region
+	 * (lï¿½n).
 	 * 
 	 * @param today
 	 *            YYYYMMDD integer.
@@ -607,7 +834,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getSpeedLimitKmPHWithDirectionAll(int today, String[] regionArray) throws SQLException {
+	public ResultSet getSpeedLimitKmPHWithDirectionAll(int today, String[] regionArray) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psSpeedLong.clearParameters();
 
 		this.psSpeedLong.setInt(1, today);
@@ -620,8 +853,8 @@ public class SQLDatabaseReader {
 	}
 
 	/**
-	 * Passes values to prepared statement that reads the attribute (företeelse)
-	 * speed (Högsta tillåtna hastighet) for all reflinks in any
+	 * Passes values to prepared statement that reads the attribute (fï¿½reteelse)
+	 * speed (Hï¿½gsta tillï¿½tna hastighet) for all reflinks in any
 	 * polygon.
 	 * 
 	 * @param today
@@ -638,7 +871,13 @@ public class SQLDatabaseReader {
 	 *             failed to set new parameters of prepared statement, or if
 	 *             failed to execute query.
 	 */
-	public ResultSet getSpeedLimitKmPHWithDirectionAll(int today, String polygonWKT, int SRID) throws SQLException {
+	public ResultSet getSpeedLimitKmPHWithDirectionAll(int today, String polygonWKT, int SRID) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
 		this.psSpeedByWKTLong.clearParameters();
 
 		this.psSpeedByWKTLong.setString(1, polygonWKT);
@@ -647,12 +886,6 @@ public class SQLDatabaseReader {
 		this.psSpeedByWKTLong.setInt(4, today);
 
 		return this.psSpeedByWKTLong.executeQuery();
-	}
-	
-	public ResultSet read(String query) throws SQLException {
-		Statement state = conn.createStatement();
-		ResultSet result = state.executeQuery(query);
-		return result;
 	}
 
 	/**
@@ -707,22 +940,94 @@ public class SQLDatabaseReader {
 			/* ignored */ }
 	}
 
-	public static void main(String[] args) {
-		// Example usage for select statement
-
-		SQLDatabaseReader sqldbr = new SQLDatabaseReader("PCSTH11541", 5432, "netdb", "gruck", "gruck", 1);
-
-		try {
-			//
-			ResultSet result = sqldbr.read("select top 100 * from netdb.road.NET_RefLinkPart");
-			while (result.next()) {
-				System.out.println(result.getString("GID") + "\t" + result.getString("REFLINK_OID"));
-			}
-			sqldbr.closeConnection();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			sqldbr.closeConnection();
+	public ResultSet getRoadWidthDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
 		}
+		
+		this.psRoadWidth.clearParameters();
+
+		this.psRoadWidth.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psRoadWidth.setArray(2, regions);
+		this.psRoadWidth.setInt(3, today);
+
+		return this.psRoadWidth.executeQuery();
+	}
+	
+	public ResultSet getLivingStreetDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
+		this.psLivingStreet.clearParameters();
+
+		this.psLivingStreet.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psLivingStreet.setArray(2, regions);
+		this.psLivingStreet.setInt(3, today);
+
+		return this.psLivingStreet.executeQuery();
+	}
+	
+	public ResultSet getGuardRailDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
+		this.psGuardRail.clearParameters();
+
+		this.psGuardRail.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psGuardRail.setArray(2, regions);
+		this.psGuardRail.setInt(3, today);
+
+		return this.psGuardRail.executeQuery();
+	}
+	
+	
+	public ResultSet getRoundaboutDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
+		this.psRoundabout.clearParameters();
+
+		this.psRoundabout.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psRoundabout.setArray(2, regions);
+		this.psRoundabout.setInt(3, today);
+
+		return this.psRoundabout.executeQuery();
+	}
+	
+	public ResultSet getUrbanAreaDirectionAll(int today, String[] region) throws SQLException 
+	{
+		if (this.conn.isClosed())
+		{
+			this.setUpConnection();
+		}
+		
+		this.psUrbanArea.clearParameters();
+
+		this.psUrbanArea.setInt(1, today);
+		
+		Array regions = this.conn.createArrayOf("varchar", region);
+		this.psUrbanArea.setArray(2, regions);
+		this.psUrbanArea.setInt(3, today);
+
+		return this.psUrbanArea.executeQuery();
 	}
 }

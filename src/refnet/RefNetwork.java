@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
@@ -16,6 +17,8 @@ import com.vividsolutions.jts.io.WKTReader;
 
 import io.FileWriters;
 import io.Logger;
+import refnet.Attribute.AttributeType;
+import refnet.Attribute.DirectionCategories;
 import util.Consolidator;
 import util.NameGenerator;
 
@@ -168,13 +171,16 @@ public class RefNetwork {
 	 * method assumes that each entry in attributes have been added to the list
 	 * through util.Consolidate.
 	 */
-	public void addAttribute(ArrayList<Attribute> attributes, String refLinkOid) {
-		if ((!(attributes.isEmpty())) && (this.refLinks.containsKey(attributes.get(0).getOid()))) {
+	public void addAttribute(ArrayList<AttributePart> attributes) 
+	{
+		if ((!(attributes.isEmpty())) && (this.refLinks.containsKey(attributes.get(0).getOid()))) 
+		{
 
 			RefLink rl = this.refLinks.get(attributes.get(0).getOid());
 			HashSet<RefNode> nodesToAdd = new HashSet<RefNode>();
 
-			for (int i = 0; i < attributes.size(); i++) {
+			for (int i = 0; i < attributes.size(); i++) 
+			{
 				try {
 					/*
 					 * this.refNodes.addAll(rl.addAttributeByGeom(attributes.get
@@ -182,7 +188,7 @@ public class RefNetwork {
 					 * RefNetwork.tolerance, true, this.logger));
 					 */
 					nodesToAdd = rl.addAttributeByGeom(attributes.get(i), this.geometryFactory, this.nmg,
-							RefNetwork.tolerance, true, this.logger);
+													   RefNetwork.tolerance, true, this.logger);
 
 					for (RefNode nodeToAdd : nodesToAdd) {
 						if (!(this._refNodes.containsKey(nodeToAdd.getOid()))) {
@@ -252,72 +258,83 @@ public class RefNetwork {
 	 *             if a database access error occurs or this method is called on
 	 *             a closed result set
 	 */
-	public void addAttribute(ResultSet attr) throws SQLException {
+	public void addAttribute(ResultSet attr, AttributeType attributeType) throws SQLException {
 
-		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
-		Attribute attribute = null;
-		Attribute attributeNoGeom = null;
+		ArrayList<AttributePart> attributePartList = new ArrayList<AttributePart>();
+		AttributePart attributePart = null;
+		AttributePart attributeNoGeom = null;
 		boolean hasAttributeNoGeom = false;
 		String prevOid = null;
 		String currOid = null;
 		String refLinkOid, attributeGeomStr;
 		LineString attributeGeom;
 		double attributeFromMeasure, attributeToMeasure;
-		Double vel;
-		Integer velDir, lanes, classification, unallowedDriveDir;
 
-		while (attr.next()) {
+
+		while (attr.next()) 
+		{
 			currOid = attr.getString("REFLINK_OID");
 
 			// 1. Check to see if data is useful.
-			if (this.refLinks.containsKey(currOid)) {
-				attributeGeomStr = attr.getString("GEOM");
+			if (this.refLinks.containsKey(currOid)) 
+			{
 				// 2. Get data
 				refLinkOid = attr.getString("REFLINK_OID");
 				attributeFromMeasure = attr.getDouble("MEASURE_FROM");
 				attributeToMeasure = attr.getDouble("MEASURE_TO");
-
+				attributeGeomStr = attr.getString("GEOM");
+				
+				Object value = null;
+				
 				// 3. Find the correct attribute field.
-				try {
-					vel = attr.getDouble("speed");
-				} catch (SQLException se) {
-					vel = null;
+				String valueType = attr.getString("valueType");
+				switch (valueType)
+				{
+					case "character varying":
+						
+						value = attr.getString("value");
+						break;
+						
+					case "boolean":
+						value = attr.getBoolean("value");
+						break;
+						
+					case "smallint":
+						value = attr.getShort("value");
+						break;
+						
+					case "double precision":
+					case "numeric":
+						value = attr.getDouble("value");
+						break;
+						
+					case "integer":
+						value = attr.getInt("value");
+						break;
+						
+					default:
+						value = attr.getObject("value");
 				}
+				
+				DirectionCategories direction = DirectionCategories.valueOf(attr.getString("direction"));
 
-				try {
-					velDir = attr.getInt("speed_direction");
-				} catch (SQLException se) {
-					velDir = null;
-				}
-
-				try {
-					lanes = attr.getInt("lanes");
-				} catch (SQLException se) {
-					lanes = null;
-				}
-
-				try {
-					classification = attr.getInt("functional_road_class");
-				} catch (SQLException se) {
-					classification = null;
-				}
-
-				try {
-					unallowedDriveDir = attr.getInt("forbidden_direction");
-				} catch (SQLException se) {
-					unallowedDriveDir = null;
-				}
-
+				HashMap<AttributeType, Attribute> attributes = new HashMap<AttributeType, Attribute>();
+				
+				attributes.put(attributeType, new Attribute(attributeType, direction, value));
+				
 				// 4. If the attribute has geometry, it is business as usual.
-				if ((attributeGeomStr != null) && (!attributeGeomStr.equals("POINT EMPTY"))) {
-					try {
+				if ((attributeGeomStr != null) && (!attributeGeomStr.equals("POINT EMPTY"))) 
+				{
+					try 
+					{
 						// 5. Create new attribute
 						attributeGeom = (LineString) wktReader.read(attributeGeomStr);
 
-						attribute = new Attribute(refLinkOid, attributeGeom, attributeFromMeasure, attributeToMeasure,
-								vel, velDir, lanes, classification, unallowedDriveDir);
+						attributePart = new AttributePart(refLinkOid, attributeGeom, attributeFromMeasure, 
+														  attributeToMeasure, attributes);
 
-						if ((prevOid != null) && (currOid.equals(prevOid))) {
+						if ((prevOid != null) && (currOid.equals(prevOid))) 
+						{
 							/*
 							 * 6. If this is not the first attribute in the
 							 * resultset and if the OID equals the previous OID,
@@ -326,46 +343,49 @@ public class RefNetwork {
 							 */
 							
 							boolean sameAttributes = false;
-							for(Attribute otherAttribute : attributes)
+							for(AttributePart otherAttribute : attributePartList)
 							{
-								if(otherAttribute.getOid().equals(attribute.getOid()) &&
-								   otherAttribute.getGeometry().equalsExact(attribute.getGeometry(),0.1) &&	
-								   otherAttribute.getMeasureFrom() == attribute.getMeasureFrom() &&
-								   otherAttribute.getMeasureTo() == attribute.getMeasureTo() &&
-								   ((otherAttribute.getVelocity() == null && attribute.getVelocity() == null) ||
-								    otherAttribute.getVelocity().equals(attribute.getVelocity())) &&
-								   ((otherAttribute.getNumberOfLanes() == null && attribute.getNumberOfLanes() == null) ||
-								   otherAttribute.getNumberOfLanes().equals(attribute.getNumberOfLanes())) &&
-								   ((otherAttribute.getFunctionalRoadClass() == null && attribute.getFunctionalRoadClass() == null) ||
-								   otherAttribute.getFunctionalRoadClass().equals(attribute.getFunctionalRoadClass())))
+								if(		otherAttribute.getOid().equals(attributePart.getOid()) 
+									&&  otherAttribute.getGeometry().equalsExact(attributePart.getGeometry(),0.1) 
+									&&	otherAttribute.getMeasureFrom() == attributePart.getMeasureFrom() 
+									&&	otherAttribute.getMeasureTo() == attributePart.getMeasureTo()
+									&&  otherAttribute.attributes.keySet().containsAll(attributePart.attributes.keySet()))
 								{
-									 if(otherAttribute.getUnallowedDriverDir() != null && attribute.getUnallowedDriverDir() != null &&
-									   !otherAttribute.getUnallowedDriverDir().equals(attribute.getFunctionalRoadClass()))
-									 {
-										 otherAttribute.setUnallowedDriverDir(3);
-										 sameAttributes = true;
-									 }
-									 if(otherAttribute.getVelocityDirection() != null && attribute.getVelocityDirection() != null &&
-									    !otherAttribute.getVelocityDirection().equals(attribute.getVelocityDirection()))
-									 {
-										 otherAttribute.setVelocityDirection(3);
-										 sameAttributes = true;
-										 
-									 }
+									boolean allEqual = true;
+									for (Entry<AttributeType, Attribute> entry : attributePart.attributes.entrySet())
+									{
+										// TODO: Special case for UnCategorized?
+										if(entry.getValue().getValue().equals(otherAttribute.attributes.get(entry.getKey()).getValue()))
+										{
+											otherAttribute.attributes.get(entry.getKey()).setDirection(DirectionCategories.WITH_AND_AGAINST);
+										}
+										else
+										{
+											allEqual = false;
+										}
+									}
+									
+									sameAttributes = allEqual;
 								}
 							}
 							
 							if(!sameAttributes)
 							{
-								attributes = Consolidator.Consolidate(attributes, attribute, this.geometryFactory);
+								attributePartList = Consolidator.Consolidate(attributePartList, 
+																			 attributePart, 
+																			 this.geometryFactory);
 							}
-						} else if (attributes.isEmpty()) {
+						} 
+						else if (attributePartList.isEmpty()) 
+						{
 							/*
 							 * 7. if the list has been emptied, then this is the
 							 * first attribute of this OID.
 							 */
-							attributes.add(attribute);
-						} else {
+							attributePartList.add(attributePart);
+						} 
+						else 
+						{
 							/*
 							 * 8. Otherwise the list isn't empty, but the new
 							 * attribute has another RefLink parent than the
@@ -375,15 +395,18 @@ public class RefNetwork {
 							 * add the attribute list to the RefLink before
 							 * moving on to the new OID.
 							 */
-							if (hasAttributeNoGeom) {
-								attributes = Consolidator.ConsolidateWithoutGeom(attributes, attributeNoGeom,
-										this.geometryFactory, this.logger);
+							if (hasAttributeNoGeom) 
+							{
+								attributePartList = Consolidator.ConsolidateWithoutGeom(attributePartList, 
+																						attributeNoGeom,
+																						this.geometryFactory, 
+																						this.logger);
 								attributeNoGeom = null;
 								hasAttributeNoGeom = false;
 							}
-							this.addAttribute(attributes, currOid);
-							attributes.clear();
-							attributes.add(attribute);
+							this.addAttribute(attributePartList);
+							attributePartList.clear();
+							attributePartList.add(attributePart);
 						}
 
 						prevOid = attr.getString("REFLINK_OID");
@@ -396,12 +419,17 @@ public class RefNetwork {
 						this.logger.log(
 								new String[] { "RefNetwork: Skipping one attribute (Illegal arguments): " + currOid });
 					}
-				} else {
-					try {
-						attributeNoGeom = new Attribute(refLinkOid, null, attributeFromMeasure, attributeToMeasure, vel,
-								velDir, lanes, classification, unallowedDriveDir);
+				} 
+				else 
+				{
+					try 
+					{
+						attributeNoGeom = new AttributePart(refLinkOid, null, attributeFromMeasure, 
+															attributeToMeasure, attributes);
 						hasAttributeNoGeom = true;
-					} catch (IllegalArgumentException iae) {
+					} 
+					catch (IllegalArgumentException iae) 
+					{
 						this.logger.log(new String[] {
 								"RefNetwork: Skipping one attribute (Illegal arguments, also lacked geometry): "
 										+ currOid });
@@ -410,15 +438,18 @@ public class RefNetwork {
 			}
 		}
 
-		if (hasAttributeNoGeom) {
-			attributes = Consolidator.ConsolidateWithoutGeom(attributes, attributeNoGeom, this.geometryFactory,
-					this.logger);
+		if (hasAttributeNoGeom) 
+		{
+			attributePartList = Consolidator.ConsolidateWithoutGeom(attributePartList, 
+																	attributeNoGeom, 
+																	this.geometryFactory,
+																	this.logger);
 			attributeNoGeom = null;
 			hasAttributeNoGeom = false;
 		}
-		this.addAttribute(attributes, currOid);
-		attributes.clear();
-		attributes.add(attribute);
+		this.addAttribute(attributePartList);
+		attributePartList.clear();
+		attributePartList.add(attributePart);
 	}
 
 	/**
@@ -442,7 +473,7 @@ public class RefNetwork {
 	 * @param withAttributes
 	 *            determines if the attributes also should be printed.
 	 */
-	public void print(boolean withAttributes) {
+	public void print(boolean withAttributes, AttributeType[] usedAttributes) {
 		String heading = "REFLINK_OID;MEASURE_FROM;MEASURE_TO;REFNODE_OID_FROM;REFNODE_OID_TO;GEOM;GEOMETRIC_LENGTH";
 
 		if (withAttributes) {
@@ -452,7 +483,7 @@ public class RefNetwork {
 		System.out.println(heading);
 
 		for (RefLink rf : this.refLinks.values()) {
-			System.out.println(rf.getRefLinkPartsAsCSVStringWithNewRow(withAttributes));
+			System.out.println(rf.getRefLinkPartsAsCSVStringWithNewRow(withAttributes, usedAttributes));
 		}
 	}
 
@@ -492,22 +523,38 @@ public class RefNetwork {
 	 * @param withAttributes
 	 *            true if the user wishes to write with any attributes.
 	 */
-	public void writeToFile(String path, String fileName, boolean withAttributes) {
+	public void writeToFile(String path, String fileName, boolean withAttributes, AttributeType[] usedAttributes) {
 		try {
 			FileWriters fw = new FileWriters(path, fileName);
-			String heading = "REFLINK_OID;MEASURE_FROM;MEASURE_TO;REFNODE_OID_FROM;REFNODE_OID_TO;GEOM;GEOMETRIC_LENGTH";
+			StringBuilder heading = new StringBuilder();
+			heading.append("REFLINK_OID;MEASURE_FROM;MEASURE_TO;"
+						 + "REFNODE_OID_FROM;REFNODE_OID_TO;GEOM;GEOMETRIC_LENGTH");
 
-			if (withAttributes) {
-				heading = heading + ";FUNKTIONELL_VAGKLASS;HASTIGHET;KORFALT;FORBJUDEN_FARDRIKTNING;HASTIGHET_RIKTNING";
+			if (withAttributes) 
+			{
+				if(usedAttributes.length > 0)
+				{
+					heading.append(";");
+				}
+				
+				for (int i = 0 ; i < usedAttributes.length ; i ++)
+				{
+					heading.append(usedAttributes[i].name());
+					
+					if (i < usedAttributes.length - 1)
+					{
+						heading.append(";");
+					}
+				}
 			}
 
-			fw.FileWritersAppendRow(heading);
+			fw.FileWritersAppendRow(heading.toString());
 
 			for (RefLink rf : this.refLinks.values()) {
 				int idx = 0;
 
 				while (idx < rf.getNbParts()) {
-					fw.FileWritersAppendRow(rf.refLinkPartAsCSVString(idx, withAttributes));
+					fw.FileWritersAppendRow(rf.refLinkPartAsCSVString(idx, withAttributes, usedAttributes));
 
 					idx++;
 				}
